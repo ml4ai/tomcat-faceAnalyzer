@@ -2,29 +2,22 @@
 
 set -u
 
-# Set the TOMCAT environment variable, assuming that the directory structure
+# Set the ROOT environment variable, assuming that the directory structure
 # mirrors that of the git repository.
-TOMCAT="$(cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd)"
-export TOMCAT
+ROOT="$(cd "$( dirname "${BASH_SOURCE[0]}" )/../" >/dev/null 2>&1 && pwd)"
+export ROOT
 
 ###############################################################################
 
-source ${TOMCAT}/tools/configuration_helpers
+source ${ROOT}/tools/configuration_helpers
 set_local_configuration
 
 detect_ci
 detect_os
 
-if ! "$TOMCAT"/tools/download/openjdk8; then
-    echo "Failed to download OpenJDK 1.8.0_232-b09."
-    exit 1
-fi
-
-set_java_home
-
 __build_tomcat() {
-    pushd "${TOMCAT}"
-        echo "Building ToMCAT in `pwd`"
+    pushd "${ROOT}"
+        echo "Building faceAnalyzer in $(pwd)"
 
         /bin/rm -rf build
         mkdir build
@@ -44,44 +37,36 @@ __build_tomcat() {
                 NJOBS=$(sysctl -n hw.ncpu)
             fi
 
-
             # On CI, we build the examples by default.
-            if (( CI )); then
-                if ! cmake ${TOMCAT} -DBUILD_EXAMPLES=ON; then exit 1; fi
-            else
-                if ! cmake ${TOMCAT}; then exit 1; fi
-            fi
+            if ! cmake ${ROOT}; then exit 1; fi
 
             if ! make -j $NJOBS; then exit 1; fi
-            if ! make -j $NJOBS Minecraft; then exit 1; fi
         popd > /dev/null
     popd > /dev/null
 }
 
-__download_tomcat_data() {
-    if ! ${TOMCAT}/tools/download/tomcat_worlds; then exit 1; fi
-
+__download_openface_models() {
     # We do not download the OpenFace models when running on a CI runner to save
     # time.
-    if [[ $CI -eq 0 && ! -d ${TOMCAT}/data/OpenFace_models ]]; then
-        if ! ${TOMCAT}/tools/download/OpenFace_models; then exit 1; fi
+    if [[ $CI -eq 0 && ! -d ${ROOT}/data/OpenFace_models ]]; then
+        if ! ${ROOT}/tools/download/OpenFace_models; then exit 1; fi
     fi
 }
 
 _install_tomcat() {
     if (( ${INSTALL_DEPENDENCIES:-1} )); then
-        if ! ${TOMCAT}/tools/install_dependencies; then exit 1; fi
+        if ! ${ROOT}/tools/install_dependencies; then exit 1; fi
     else
         echo "INSTALL_DEPENDENCIES has been set to 0, so we skip the automatic"\
-             "installation of ToMCAT dependencies, and assume that you have"\
+             "installation of faceAnalyzer dependencies, and assume that you have"\
              "already installed the prerequisites (either manually or using a"\
              "previous invocation of the install script.)"
     fi
     __build_tomcat
-    __download_tomcat_data
+    __download_openface_models
 
     echo " "
-    echo "Finished installing ToMCAT in ${TOMCAT}!"
+    echo "Finished installing faceAnalyzer in ${ROOT}!"
     echo " "
 }
 

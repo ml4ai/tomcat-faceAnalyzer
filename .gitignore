@@ -1,0 +1,81 @@
+# Build directory for CMake
+
+build
+*.swp
+
+# IDEs
+.idea
+cmake-build-debug
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# lcov output
+coverage.info
+
+# xsd
+*.xsd
+
+# MacOS filesystem
+.DS_Store
+
+# data
+data/*
+
+# Images
+*.png
+*.svg
+*.jpeg
+*.jpg
+
+# PDFs
+*.pdf
+
+# Zipped and Gzipped files
+*.tar.gz
+*.tgz
+*.zip
+
+# Python stuff
+.ipynb_checkpoints
+__pycache__
+
+# Media files
+*.mpg
+*.wav
+
+# netrc files that might have authentication information
+netrc
+
+# .env files that can hold local configurations
+.env

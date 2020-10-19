@@ -1,0 +1,27 @@
+# Workflow for continuous integration and testing
+
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ 'master' ]
+
+jobs:
+  ci:
+    runs-on: ${{ matrix.os }}
+    if: github.repository == 'ml4ai/tomcat-faceAnalyzer'
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-latest]
+
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Continuous Integration
+      run: |
+        # Adarsh: This only tests for compilation. We should probably have
+        # some more robust testing.
+        ./tools/install
