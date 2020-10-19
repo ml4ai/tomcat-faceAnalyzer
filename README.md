@@ -11,7 +11,8 @@ The `faceAnalyzer` executable uses a slightly modified version of the [OpenFace
 library](https://github.com/TadasBaltrusaitis/OpenFace) for facial action unit
 recognition, face landmark detection, eye-gaze estimation and head pose
 estimation. The executable can process input webcam live as well as video or
-image files from the disk.
+image files from the disk. `faceAnalyzer` is part of the
+[ToMCAT](https://ml4ai.github.io/tomcat) project.
 
 **Note**: We vendorize OpenFace under ``external/OpenFace`` since (i) it's not
 available using a package manager, and (ii) we have made some modifications
