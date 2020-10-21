@@ -37,7 +37,7 @@ namespace tomcat {
         bool indent;
         bool visual;
         bool emotion;
-        std::string get_emotion(nlohmann::json emotion);
+        std::vector<std::string> get_emotion(nlohmann::json emotion);
     };
 
 } // namespace tomcat

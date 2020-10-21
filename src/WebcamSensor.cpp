@@ -252,7 +252,7 @@ namespace tomcat {
             if (this->emotion)
             {   
                 json action_units = output["data"]["action_units"];
-                string emotion_label = get_emotion(action_units);
+                vector<string> emotion_label = get_emotion(action_units);
                 output["data"]["action_units"]["emotion"] = emotion_label;
             }
 
@@ -342,27 +342,29 @@ namespace tomcat {
     // Refer to: https://en.wikipedia.org/wiki/Facial_Action_Coding_System
     // and https://imotions.com/blog/facial-action-coding-system/
     
-    string WebcamSensor::get_emotion(json au) {
-        string label;
+    vector<string> WebcamSensor::get_emotion(json au) {
+        vector<string> label;
         
         if (au["AU06"]["occurrence"] == 1 && au["AU12"]["occurrence"] == 1)
-            label = "happiness";
-        else if(au["AU01"]["occurrence"] == 1 && au["AU04"]["occurrence"] == 1 && au["AU15"]["occurrence"] == 1)
-            label = "sadness";
-        else if(au["AU01"]["occurrence"] == 1 && au["AU02"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU26"]["occurrence"] == 1)
-            label = "surprise";
-        else if(au["AU01"]["occurrence"] == 1 && au["AU02"]["occurrence"] == 1 && au["AU04"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU07"]["occurrence"] == 1 && au["AU20"]["occurrence"] == 1 && au["AU26"]["occurrence"] == 1)
-            label = "fear";
-        else if(au["AU04"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU07"]["occurrence"] == 1 && au["AU23"]["occurrence"] == 1)
-            label = "anger";
-        else if(au["AU09"]["occurrence"] == 1 && au["AU15"]["occurrence"] == 1 && au["AU17"]["occurrence"] == 1)
-            label = "disgust";
-        else if(au["AU12"]["occurrence"] == 1 && au["AU14"]["occurrence"] == 1)
-            label = "contempt";
-        else
-            label = "none";
+            label.push_back("happiness");
+        if(au["AU01"]["occurrence"] == 1 && au["AU04"]["occurrence"] == 1 && au["AU15"]["occurrence"] == 1)
+            label.push_back("sadness");
+        if(au["AU01"]["occurrence"] == 1 && au["AU02"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU26"]["occurrence"] == 1)
+            label.push_back("surprise");
+        if(au["AU01"]["occurrence"] == 1 && au["AU02"]["occurrence"] == 1 && au["AU04"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU07"]["occurrence"] == 1 && au["AU20"]["occurrence"] == 1 && au["AU26"]["occurrence"] == 1)
+            label.push_back("fear");
+        if(au["AU04"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU07"]["occurrence"] == 1 && au["AU23"]["occurrence"] == 1)
+            label.push_back("anger");
+        if(au["AU09"]["occurrence"] == 1 && au["AU15"]["occurrence"] == 1 && au["AU17"]["occurrence"] == 1)
+            label.push_back("disgust");
+        if(au["AU12"]["occurrence"] == 1 && au["AU14"]["occurrence"] == 1)
+            label.push_back("contempt");
+                
+        if(label.empty())
+            label.push_back("none");
         
         return label;
     }
+
 
 } // namespace tomcat
