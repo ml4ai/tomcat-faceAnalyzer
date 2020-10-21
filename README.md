@@ -323,9 +323,9 @@ For more information, visit: https://en.wikipedia.org/wiki/Facial_Action_Coding_
 3. The faceAnalyzer executable outputs a list of all the emotions detected by the 
    FACS configuration mentioned above. Due to shared characteristic AUs, there might
    be an overlap of emotions. A possible explanation for this limitation is that each
-   timestamp captures the emotional expression at a fixed point in time and the possibility 
-   that the most valent expression or the sequence of facial changes essential for the 
-   expression of a particular emotion are not obtained (Kohler et al., 2004).
+   timestamp captures the expression at a fixed point in time and the possibility 
+   that there may be an overlap in the sequence of facial changes (onset, apex, offset)
+   associated with emotion categories is not taken into consideration (Kohler et al., 2004).
 
 
 ## References
