@@ -253,7 +253,7 @@ namespace tomcat {
                 json action_units = output["data"]["action_units"];
                 unordered_set<string> emotion_labels =
                     get_emotions(action_units);
-                output["data"]["action_units"]["emotions"] = emotion_labels;
+                output["data"]["emotions"] = emotion_labels;
             }
 
             for (auto& [AU, intensity] : AU_reg) {
@@ -372,9 +372,6 @@ namespace tomcat {
         }
         if (au["AU12"]["occurrence"] == 1 && au["AU14"]["occurrence"] == 1) {
             labels.insert("contempt");
-        }
-        if (labels.empty()) {
-            labels.insert("none");
         }
 
         return labels;

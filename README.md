@@ -120,11 +120,11 @@ enabled:
                 "intensity": 0.7400846556287861,
                 "occurrence": 0.0
             },
-            "emotion": [
-                "sadness",
-                "contempt"
-            ]
         },
+        "emotions": [
+            "sadness",
+            "contempt"
+        ],
         "frame": 1,
         "gaze": {
             "eye_0": {
@@ -319,11 +319,11 @@ For more information, visit: https://en.wikipedia.org/wiki/Facial_Action_Coding_
    vary, to some degree, around a prototypical set of movements. However,
    expressions of the same emotion category vary substantially across different
    situations, people, gender, and cultures (Barrett et al., 2019).
-   
-3. The faceAnalyzer executable outputs a list of all the emotions detected by the 
+
+3. The faceAnalyzer executable outputs a list of all the emotions detected by the
    FACS configuration mentioned above. Due to shared characteristic AUs, there might
    be an overlap of emotions. A possible explanation for this limitation is that each
-   timestamp captures the expression at a fixed point in time and the possibility 
+   timestamp captures the expression at a fixed point in time and the possibility
    that there may be an overlap in the sequence of facial changes (onset, apex, offset)
    associated with emotion categories is not taken into consideration (Kohler et al., 2004).
 
@@ -344,6 +344,6 @@ Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial action coding
 system. _Unpublished manuscript, University of California at San Francisco,
 2(36)_, 1
 
-Kohler, C. G., Turner, T., Stolar, N. M., Bilker, W. B., Brensinger, C. M., Gur, 
-R. E., & Gur, R. C. (2004). Differences in facial expressions of four universal 
+Kohler, C. G., Turner, T., Stolar, N. M., Bilker, W. B., Brensinger, C. M., Gur,
+R. E., & Gur, R. C. (2004). Differences in facial expressions of four universal
 emotions. _Psychiatry research, 128(3)_, 235-244.
