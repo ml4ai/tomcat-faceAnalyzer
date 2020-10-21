@@ -22,14 +22,14 @@ namespace tomcat {
                                   bool ind,
                                   bool vis,
                                   string file_path,
-                                  bool emo) {
+                                  bool output_emotions) {
         // Initialize the experiment ID, trial ID and player name
         this->exp_id = exp;
         this->trial_id = trial;
         this->playername = pname;
         this->indent = ind;
         this->visual = vis;
-        this->emotion = emo;
+        this->output_emotions = output_emotions;
         if (file_path.compare("null") != 0) {
             this->arguments.insert(this->arguments.begin(), file_path);
             this->arguments.insert(this->arguments.begin(), "-f");
@@ -246,14 +246,14 @@ namespace tomcat {
             for (auto& [AU, occurrence] : AU_class) {
                 output["data"]["action_units"][AU]["occurrence"] = occurrence;
             }
-            
-            // Only classify emotion if the user specifies through command line option
-            // --emotion
-            if (this->emotion)
-            {   
+
+            // Only classify emotion if the user specifies through command line
+            // option '--emotion'
+            if (this->output_emotions) {
                 json action_units = output["data"]["action_units"];
-                vector<string> emotion_label = get_emotion(action_units);
-                output["data"]["action_units"]["emotion"] = emotion_label;
+                unordered_set<string> emotion_labels =
+                    get_emotions(action_units);
+                output["data"]["action_units"]["emotions"] = emotion_labels;
             }
 
             for (auto& [AU, intensity] : AU_reg) {
@@ -335,36 +335,49 @@ namespace tomcat {
         face_analyser.Reset();
         face_model.Reset();
     }
-    
+
     // Reference: Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial
-    // action coding system. Unpublished manuscript, University of California at 
+    // action coding system. Unpublished manuscript, University of California at
     // San Francisco, 2(36), 1.
     // Refer to: https://en.wikipedia.org/wiki/Facial_Action_Coding_System
     // and https://imotions.com/blog/facial-action-coding-system/
-    
-    vector<string> WebcamSensor::get_emotion(json au) {
-        vector<string> label;
-        
-        if (au["AU06"]["occurrence"] == 1 && au["AU12"]["occurrence"] == 1)
-            label.push_back("happiness");
-        if(au["AU01"]["occurrence"] == 1 && au["AU04"]["occurrence"] == 1 && au["AU15"]["occurrence"] == 1)
-            label.push_back("sadness");
-        if(au["AU01"]["occurrence"] == 1 && au["AU02"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU26"]["occurrence"] == 1)
-            label.push_back("surprise");
-        if(au["AU01"]["occurrence"] == 1 && au["AU02"]["occurrence"] == 1 && au["AU04"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU07"]["occurrence"] == 1 && au["AU20"]["occurrence"] == 1 && au["AU26"]["occurrence"] == 1)
-            label.push_back("fear");
-        if(au["AU04"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 && au["AU07"]["occurrence"] == 1 && au["AU23"]["occurrence"] == 1)
-            label.push_back("anger");
-        if(au["AU09"]["occurrence"] == 1 && au["AU15"]["occurrence"] == 1 && au["AU17"]["occurrence"] == 1)
-            label.push_back("disgust");
-        if(au["AU12"]["occurrence"] == 1 && au["AU14"]["occurrence"] == 1)
-            label.push_back("contempt");
-                
-        if(label.empty())
-            label.push_back("none");
-        
-        return label;
-    }
 
+    unordered_set<string> WebcamSensor::get_emotions(json au) {
+        unordered_set<string> labels;
+
+        if (au["AU06"]["occurrence"] == 1 && au["AU12"]["occurrence"] == 1) {
+            labels.insert("happiness");
+        }
+        if (au["AU01"]["occurrence"] == 1 && au["AU04"]["occurrence"] == 1 &&
+            au["AU15"]["occurrence"] == 1) {
+            labels.insert("sadness");
+        }
+        if (au["AU01"]["occurrence"] == 1 && au["AU02"]["occurrence"] == 1 &&
+            au["AU05"]["occurrence"] == 1 && au["AU26"]["occurrence"] == 1) {
+            labels.insert("surprise");
+        }
+        if (au["AU01"]["occurrence"] == 1 && au["AU02"]["occurrence"] == 1 &&
+            au["AU04"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 &&
+            au["AU07"]["occurrence"] == 1 && au["AU20"]["occurrence"] == 1 &&
+            au["AU26"]["occurrence"] == 1) {
+            labels.insert("fear");
+        }
+        if (au["AU04"]["occurrence"] == 1 && au["AU05"]["occurrence"] == 1 &&
+            au["AU07"]["occurrence"] == 1 && au["AU23"]["occurrence"] == 1) {
+            labels.insert("anger");
+        }
+        if (au["AU09"]["occurrence"] == 1 && au["AU15"]["occurrence"] == 1 &&
+            au["AU17"]["occurrence"] == 1) {
+            labels.insert("disgust");
+        }
+        if (au["AU12"]["occurrence"] == 1 && au["AU14"]["occurrence"] == 1) {
+            labels.insert("contempt");
+        }
+        if (labels.empty()) {
+            labels.insert("none");
+        }
+
+        return labels;
+    }
 
 } // namespace tomcat
