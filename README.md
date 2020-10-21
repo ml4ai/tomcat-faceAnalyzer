@@ -14,7 +14,7 @@ estimation. The executable can process input webcam live as well as video or
 image files from the disk. `faceAnalyzer` is part of the
 [ToMCAT](https://ml4ai.github.io/tomcat) project.
 
-**Note**: We vendorize OpenFace under ``external/OpenFace`` since (i) it's not
+**NOTE:** We vendorize OpenFace under ``external/OpenFace`` since (i) it's not
 available using a package manager, and (ii) we have made some modifications
 (mainly ergonomic) to it to suit our purposes.
 
@@ -37,6 +37,8 @@ Navigate to the `build/` directory in the tomcat-faceAnalyzer root directory and
 
 This will start processing the webcam live feed and output the facial features
 to the standard output in JSON format.
+
+**NOTE:** Alternatively, you could edit your bashrc file to set the OpenFace models directory.
 
 #### Command Line Arguments
 
@@ -64,7 +66,7 @@ To exit visualization and stop the processing of webcam/video, press the letter
 
 If you want to extract the facial features from a live **webcam** feed, set the
 experiment ID as `563e4567-e89b-12d3-a456-426655440000`, set the trial ID as
-`123e4567-e89b-12d3-a456-426655440000`, and display the discrete emotion for
+`123e4567-e89b-12d3-a456-426655440000`, and display the discrete emotions for
 each timestamp, execute the following command on the command line:
 
 ```
@@ -96,7 +98,7 @@ Similarly, you can have other combinations.
 ## Output Format
 
 The `faceAnalyzer` executable uses the `nlohmann-json` library to output the
-action units (and the facial expression, if specified through command line
+action units (and the facial expressions, if specified through command line
 option `--emotion`), eye landmarks, gaze estimation and pose estimation values.
 The following is an example JSON message with indentation and emotion display
 enabled:
@@ -118,8 +120,11 @@ enabled:
                 "intensity": 0.7400846556287861,
                 "occurrence": 0.0
             },
-            "emotion": "contempt"
         },
+        "emotions": [
+            "sadness",
+            "contempt"
+        ],
         "frame": 1,
         "gaze": {
             "eye_0": {
@@ -220,7 +225,7 @@ units:
 `AU01_c, AU02_c, AU04_c, AU05_c, AU06_c, AU07_c, AU09_c, AU10_c, AU12_c,
 AU14_c, AU15_c, AU17_c, AU20_c, AU23_c, AU25_c, AU26_c, AU28_c, AU45_c`
 
-`emotion` specifies the facial expression displayed as a combination of action
+`emotion` specifies a list of facial expressions displayed as a combination of action
 units
 
 `frame` specifies the number of the frame (in case of sequences, ie, webcam and
@@ -315,6 +320,13 @@ For more information, visit: https://en.wikipedia.org/wiki/Facial_Action_Coding_
    expressions of the same emotion category vary substantially across different
    situations, people, gender, and cultures (Barrett et al., 2019).
 
+3. The faceAnalyzer executable outputs a list of all the emotions detected by the
+   FACS configuration mentioned above. Due to shared characteristic AUs, there might
+   be an overlap of emotions. A possible explanation for this limitation is that each
+   timestamp captures the expression at a fixed point in time and the possibility
+   that there may be an overlap in the sequence of facial changes (onset, apex, offset)
+   associated with emotion categories is not taken into consideration (Kohler et al., 2004).
+
 
 ## References
 
@@ -331,3 +343,7 @@ from human facial movements. _Psychological Science in the Public Interest,
 Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial action coding
 system. _Unpublished manuscript, University of California at San Francisco,
 2(36)_, 1
+
+Kohler, C. G., Turner, T., Stolar, N. M., Bilker, W. B., Brensinger, C. M., Gur,
+R. E., & Gur, R. C. (2004). Differences in facial expressions of four universal
+emotions. _Psychiatry research, 128(3)_, 235-244.

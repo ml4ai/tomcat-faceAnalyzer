@@ -4,6 +4,7 @@
 #include <VisualizationUtils.h>
 #include <Visualizer.h>
 #include <nlohmann/json.hpp>
+#include <unordered_set>
 
 namespace tomcat {
 
@@ -19,7 +20,7 @@ namespace tomcat {
                         bool ind,
                         bool vis,
                         std::string file_path,
-                        bool emo);
+                        bool output_emotions);
         void get_observation();
 
       private:
@@ -36,8 +37,8 @@ namespace tomcat {
         std::string playername;
         bool indent;
         bool visual;
-        bool emotion;
-        std::string get_emotion(nlohmann::json emotion);
+        bool output_emotions;
+        std::unordered_set<std::string> get_emotions(nlohmann::json au);
     };
 
 } // namespace tomcat
