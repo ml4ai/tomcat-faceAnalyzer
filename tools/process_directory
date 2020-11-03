@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# Script to run faceAnalyzer in parallel for videos in a directory. One .txt
+# file is created per video file, with each line of the .txt file containing a
+# JSON message.
+
+# Author: Adarsh Pyarelal (adarsh@arizona.edu)
+
+set -euo pipefail
+
+
+# You'll need GNU parallel (https://www.gnu.org/software/parallel/) to run
+# this.
+
+# path to the OpenFace models
+OPENFACE_MODELS=./data/OpenFace_models
+
+# Path to the faceAnalyzer executable
+FACEANALYZER_EXECUTABLE=./build/bin/faceAnalyzer
+
+# Path to the input directory
+INPUT_DIR=path/to/input
+OUTPUT_DIR=path/to/output
+
+# The extension of your video files
+EXTENSION=mpg
+
+mkdir -p "$INPUT_DIR" "$OUTPUT_DIR"
+parallel  "${FACEANALYZER_EXECUTABLE} --mloc ${OPENFACE_MODELS} -f {} > ${OUTPUT_DIR}/{/.}.txt" ::: "$INPUT_DIR"/*.${EXTENSION}

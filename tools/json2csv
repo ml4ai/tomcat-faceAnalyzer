@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+
+""" Script to create a CSV from JSON message files produced by the faceAnalyzer
+tool.
+
+Author: Adarsh Pyarelal (adarsh@arizona.edu)
+
+Usage: ./json2csv <input_directory> <output_csv_filepath>
+"""
+
+import sys
+import json
+from glob import glob
+import csv
+from tqdm import tqdm
+
+# Set the directory to process
+directory = sys.argv[1]
+
+# Write output to a file called output.csv
+output_csv = sys.argv[2]
+
+with open(output_csv, "w", newline="") as csvfile:
+
+    # Create a CSV writer object
+    writer = csv.writer(
+        csvfile, delimiter=",", quotechar="|", quoting=csv.QUOTE_MINIMAL
+    )
+
+    # Write the column names
+    writer.writerow(["filename", "frame_number", "emotions"])
+
+    # Process all the files ending in .txt in the directory to process.
+    for filename in tqdm(glob(directory + "/*.txt")):
+        with open(filename) as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                # We use a try-except statement to handle errors gracefully.
+                try:
+                    msg = json.loads(line)
+                    # To print JSON for debugging - uncomment the line below
+                    # print(json.dumps(msg, indent=2))
+
+                    # Write a row
+                    writer.writerow(
+                        [
+                            filename,
+                            msg["data"]["frame"],
+                            msg["data"]["emotions"],
+                        ]
+                    )
+                except:
+                    print(
+                        f"Unable to process line '{i}' in {filename}, skipping..."
+                    )
+                    pass
