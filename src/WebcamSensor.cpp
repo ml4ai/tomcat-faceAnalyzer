@@ -11,6 +11,7 @@
 
 using namespace std;
 using namespace nlohmann;
+namespace pt = boost::posix_time;
 
 typedef vector<pair<string, double>> au_vector;
 
@@ -61,10 +62,6 @@ namespace tomcat {
         using LandmarkDetector::DetectLandmarksInVideo;
         using LandmarkDetector::FaceModelParameters;
         using LandmarkDetector::GetPose;
-
-        // Start time for facesensor
-        boost::posix_time::ptime t_start(
-            boost::posix_time::microsec_clock::universal_time());
 
         // Load facial feature extractor and AU analyser
         FaceAnalysis::FaceAnalyserParameters face_analysis_params(
@@ -208,15 +205,13 @@ namespace tomcat {
             // JSON output
             json output;
 
-            int micro_timestamp =
-                int(this->sequence_reader.time_stamp * pow(10, 6));
-            t_start += boost::posix_time::microseconds(micro_timestamp);
-            string str_timestamp = to_iso_extended_string(t_start);
-            str_timestamp.push_back('Z');
+            string timestamp =
+            	pt::to_iso_extended_string(pt::microsec_clock::universal_time()) +
+            	"Z";
 
             // Header block
             output["header"] = {
-                {"timestamp", str_timestamp},
+                {"timestamp", timestamp},
                 {"message_type", "observation"},
                 {"version", "0.1"},
             };
@@ -224,7 +219,7 @@ namespace tomcat {
             // Message block
             output["msg"] = {{"experiment_id", this->exp_id},
                              {"trial_id", this->trial_id},
-                             {"timestamp", str_timestamp},
+                             {"timestamp", timestamp},
                              {"source", "faceSensor"},
                              {"sub_type", "state"},
                              {"version", "0.1"}};
