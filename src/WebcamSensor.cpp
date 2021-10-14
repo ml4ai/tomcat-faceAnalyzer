@@ -8,12 +8,41 @@
 #include <boost/date_time/time_facet.hpp>
 #include <nlohmann/json.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <unistd.h>
+
 
 using namespace std;
 using namespace nlohmann;
 namespace pt = boost::posix_time;
 
 typedef vector<pair<string, double>> au_vector;
+
+string type2str(int type) {
+  string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
 
 namespace tomcat {
 
@@ -82,8 +111,42 @@ namespace tomcat {
             this->sequence_reader.fps);
 
         this->rgb_image = this->sequence_reader.GetNextFrame();
+	
+	cv::namedWindow("CV Video", 1);
 
+	// Initialize networking stuff-----------------------------------------
+	int sokt;
+	char* serverIP = "127.0.0.1";
+	int serverPort = 1234;
+
+	struct sockaddr_in serverAddr;
+	socklen_t addrLen = sizeof(struct sockaddr_in);
+
+	if ((sokt = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+		cerr << "socket() failed" << endl;
+	}
+
+	serverAddr.sin_family = PF_INET;
+	serverAddr.sin_addr.s_addr = inet_addr(serverIP);
+	serverAddr.sin_port = htons(serverPort);
+
+	if (connect(sokt, (sockaddr*)&serverAddr, addrLen) < 0) {
+		cerr << "connect() failed" << endl;
+	}
+	
+	printf("Rows: %d, Columns: %d\n", this->rgb_image.rows, this->rgb_image.cols);
+	printf("TYPE: %s", type2str(this->rgb_image.type()).c_str());
+	int imgSize = this->rgb_image.total() * this->rgb_image.elemSize();
+	int bytes = 0;
+
+	// --------------------------------------------------------------------
         while (!this->rgb_image.empty()) {
+		cv::imshow("CV Video", this->rgb_image);
+		//cv::waitKey(10);
+		if ((bytes = send(sokt, this->rgb_image.data, imgSize, 0)) < 0) {
+			cerr << "bytes = " << bytes << endl;
+			break;
+		}
 
             // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
