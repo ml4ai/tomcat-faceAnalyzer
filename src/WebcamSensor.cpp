@@ -134,14 +134,18 @@ namespace tomcat {
 		cerr << "connect() failed" << endl;
 	}
 	
+	// Future reference: Prints out the number of rows and columns in the Mat obj
 	printf("Rows: %d, Columns: %d\n", this->rgb_image.rows, this->rgb_image.cols);
+	
+	// Future reference: Prints out the type of Mat obj that is being sent
 	printf("TYPE: %s", type2str(this->rgb_image.type()).c_str());
+
 	int imgSize = this->rgb_image.total() * this->rgb_image.elemSize();
 	int bytes = 0;
 
 	// --------------------------------------------------------------------
         while (!this->rgb_image.empty()) {
-		cv::imshow("CV Video", this->rgb_image);
+		//cv::imshow("CV Video", this->rgb_image);
 		//cv::waitKey(10);
 		if ((bytes = send(sokt, this->rgb_image.data, imgSize, 0)) < 0) {
 			cerr << "bytes = " << bytes << endl;
