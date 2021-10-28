@@ -17,10 +17,12 @@
 
 using namespace std;
 using namespace nlohmann;
+using namespace cv;
 namespace pt = boost::posix_time;
 
 typedef vector<pair<string, double>> au_vector;
 
+// Method that checks the type of CV object that is being used based on the type integer passed in
 string type2str(int type) {
   string r;
 
@@ -83,7 +85,7 @@ namespace tomcat {
     };
 
     void WebcamSensor::get_observation() {
-        using cv::Point2f;
+        /*using cv::Point2f;
         using cv::Point3f;
         using GazeAnalysis::EstimateGaze;
         using LandmarkDetector::Calculate3DEyeLandmarks;
@@ -103,18 +105,18 @@ namespace tomcat {
         Utilities::RecorderOpenFaceParameters recording_params(
             this->arguments,
             true,
-            this->sequence_reader.IsWebcam(),
+           // this->sequence_reader.IsWebcam(),
             this->sequence_reader.fx,
             this->sequence_reader.fy,
             this->sequence_reader.cx,
             this->sequence_reader.cy,
             this->sequence_reader.fps);
 
-        this->rgb_image = this->sequence_reader.GetNextFrame();
+        this->rgb_image = this->sequence_reader.GetNextFrame();*/
 	
-	cv::namedWindow("CV Video", 1);
+	//cv::namedWindow("CV Video", 1);
 
-	// Initialize networking stuff-----------------------------------------
+	/* Initialize networking stuff (client)-----------------------------------------
 	int sokt;
 	char* serverIP = "127.0.0.1";
 	int serverPort = 1234;
@@ -143,16 +145,89 @@ namespace tomcat {
 	int imgSize = this->rgb_image.total() * this->rgb_image.elemSize();
 	int bytes = 0;
 
-	// --------------------------------------------------------------------
-        while (!this->rgb_image.empty()) {
+	// ------------------------------------------------------------------- */
+	
+	// Initialize networking stuff (server)-------------------------------------
+	int	localSocket,
+		remoteSocket,
+		port = 4097;
+
+	struct  sockaddr_in localAddr,
+                        remoteAddr;
+    	//pthread_t thread_id;
+
+
+    	int addrLen = sizeof(struct sockaddr_in);
+
+
+    	/*if ( (argc > 1) && (strcmp(argv[1],"-h") == 0) ) {
+         	 std::cerr << "usage: ./cv_video_srv [port] [capture device]\n" <<
+                       		"port           : socket port (4097 default)\n" <<
+                       		"capture device : (0 default)\n" << std::endl;
+
+          	exit(1);
+    	}*/
+
+    	//if (argc == 2) port = atoi(argv[1]);
+	
+
+    	localSocket = socket(AF_INET , SOCK_STREAM , 0);
+    	if (localSocket == -1){
+        	 perror("socket() call failed!!");
+    	}
+
+	localAddr.sin_family = AF_INET;
+    	localAddr.sin_addr.s_addr = INADDR_ANY;
+    	localAddr.sin_port = htons( port );
+
+    	if( bind(localSocket,(struct sockaddr *)&localAddr , sizeof(localAddr)) < 0) {
+        	 perror("Can't bind() socket");
+        	 exit(1);
+    	}
+
+    	// Listening
+    	listen(localSocket , 3);
+
+    	std::cout <<  "Waiting for connections...\n"
+             	  <<  "Server Port:" << port << std::endl;
+
+	while(1) {
+		remoteSocket = accept(localSocket, (struct sockaddr *)&remoteAddr, (socklen_t*)&addrLen);
+		if (remoteSocket < 0) {
+			perror("accept failed!");
+			exit(1);
+		}
+		std::cout << "Connection accepted" << std::endl;
+		std::cout << "this is a test";
+		break;
+	}
+	
+	Mat img, imgGray;
+	img = Mat::zeros(480, 640, CV_8UC3);
+	if (!img.isContinuous()) {
+		img = img.clone();
+	}
+	uchar *iptr = img.data;
+
+	int imgSize = img.total() * img.elemSize();
+	int bytes = 0;
+	int key;
+
+	namedWindow("CV Video Server", 1); // Add a message here later to say which thread
+	
+        while (/*!this->rgb_image.empty()*/1) {
 		//cv::imshow("CV Video", this->rgb_image);
 		//cv::waitKey(10);
-		if ((bytes = send(sokt, this->rgb_image.data, imgSize, 0)) < 0) {
-			cerr << "bytes = " << bytes << endl;
+		//std::cout << "reached" << endl;
+		if ((bytes = recv(remoteSocket, iptr, imgSize, MSG_WAITALL)) == -1) {
+			cerr << "recv failed, received bytes = " << bytes << endl;
 			break;
 		}
+		cv::imshow("CV Video Server", img);
+		cv::waitKey(10);
+		//if ((key = cv::waitKey(10)) >= 0) break;
 
-            // Converting to grayscale
+           /* // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
 
             // The actual facial landmark detection / tracking
@@ -387,15 +462,16 @@ namespace tomcat {
             else
                 cout << output.dump() << endl;
 
-            // Grabbing the next frame in the sequence
-            this->rgb_image = this->sequence_reader.GetNextFrame();
+            // Grabbing the next frame in the sequence   */
+            //---this->rgb_image = this->sequence_reader.GetNextFrame();
         }
+	//close(remoteSocket);
 
-        this->sequence_reader.Close();
+        //this->sequence_reader.Close();
 
         // Reset the models for the next video
-        face_analyser.Reset();
-        face_model.Reset();
+        //face_analyser.Reset();
+        //face_model.Reset();
     }
 
     // Reference: Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial
