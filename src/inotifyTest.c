@@ -29,18 +29,22 @@ int main(){
 			printf("Read error");
 
 		int i = 0;
+		char *name = "";
 		while(i < total_read){
 			struct inotify_event *event = (struct inotify_event*) &buffer[i];
 			if(event->len){
 				if(event->mask & IN_CREATE){
 					if(event->mask & IN_ISDIR)
 						printf("Directory \"%s\" was created\n", event->name);
-					else
+					else {
 						printf("File \"%s\" was created\n", event->name);
+						name = event->name;
+					}
 				}
 				i += MONITOR_EVENT_SIZE + event->len;
 			}
 		}
+		printf("Reached here, this is the name %s\n", name);
 	}
 
 	inotify_rm_watch(fd, watch_desc);

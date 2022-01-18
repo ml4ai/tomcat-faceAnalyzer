@@ -8,6 +8,16 @@
 #include <boost/date_time/time_facet.hpp>
 #include <nlohmann/json.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/inotify.h>
+#include <unistd.h>
+#include <string>
+
+#define MAX_EVENT_MONITOR 2048
+#define NAME_LEN 32
+#define MONITOR_EVENT_SIZE (sizeof(struct inotify_event))
+#define BUFFER_LEN MAX_EVENT_MONITOR*(MONITOR_EVENT_SIZE+NAME_LEN)
 
 using namespace std;
 using namespace nlohmann;
@@ -80,10 +90,61 @@ namespace tomcat {
             this->sequence_reader.cx,
             this->sequence_reader.cy,
             this->sequence_reader.fps);
+	
+	// This command gets the frame from the webcam (Uncomment to remove inotify functionality)
+        //this->rgb_image = this->sequence_reader.GetNextFrame();
 
-        this->rgb_image = this->sequence_reader.GetNextFrame();
+        //while (!this->rgb_image.empty()) {
+	
+	// -----------------------------------------
+	// Inotify code
+	// -----------------------------------------
+	
+	int fd, watch_desc;
+	char buffer[BUFFER_LEN];
+	fd = inotify_init();
 
-        while (!this->rgb_image.empty()) {
+	if (fd < 0)
+		printf("Notify did not initialize");
+	
+	// Change the destination to the location where images are going to be added
+	watch_desc = inotify_add_watch(fd, "/home/vatsav14/code/test", IN_CREATE);
+
+	if (watch_desc == -1)
+		printf("Couldn't add watch to the path");
+	else
+		printf("Monitoring path...\n");
+
+	while (1) {
+	    
+	    int total_read = read (fd, buffer, BUFFER_LEN);
+	    if (total_read < 0)
+		    printf("Read error");
+
+	    int i = 0;
+	    string filename = "";
+	    
+	    cout << "Reached here" << endl;
+	    while(i < total_read) {
+		    struct inotify_event *event = (struct inotify_event*) &buffer[i];
+		    if (event->len) {
+			    if (event->mask & IN_CREATE) {
+				    if (event->mask & IN_ISDIR)
+					    cout << "This is a directory";
+				    else
+					    filename = event->name;
+			    }
+			    i += MONITOR_EVENT_SIZE + event->len;
+		    }
+	    }
+	    // Use the filename variable here to get the name of the file
+	    filename = "/home/vatsav14/code/test/" + filename;
+	    this->rgb_image = cv::imread(filename);
+	    cout << "This is the name of the file: " << filename << endl; 
+
+	    // -----------------------------------
+	    // OpenFace code begins
+	    // -----------------------------------
 
             // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
@@ -320,15 +381,19 @@ namespace tomcat {
             else
                 cout << output.dump() << endl;
 
-            // Grabbing the next frame in the sequence
-            this->rgb_image = this->sequence_reader.GetNextFrame();
+            // Grabbing the next frame in the sequence (removed for inotify)
+            // this->rgb_image = this->sequence_reader.GetNextFrame();
         }
-
+	
         this->sequence_reader.Close();
 
         // Reset the models for the next video
         face_analyser.Reset();
         face_model.Reset();
+	
+	// Close the inotify watch
+	inotify_rm_watch(fd, watch_desc);
+	close(fd);
     }
 
     // Reference: Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial
