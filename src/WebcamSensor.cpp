@@ -103,20 +103,21 @@ namespace tomcat {
 	int fd, watch_desc;
 	char buffer[BUFFER_LEN];
 	fd = inotify_init();
+	int testing_int = 1;
 
 	if (fd < 0)
 		printf("Notify did not initialize");
 	
 	// Change the destination to the location where images are going to be added
-	watch_desc = inotify_add_watch(fd, "/home/vatsav14/code/test", IN_CREATE);
+	string monitor_path = "/data/cat/lion";
+	watch_desc = inotify_add_watch(fd, monitor_path.c_str(), IN_CREATE);
 
 	if (watch_desc == -1)
 		printf("Couldn't add watch to the path");
 	else
-		printf("Monitoring path...\n");
-
+		cout << "Monitoring path " << monitor_path << endl;
 	while (1) {
-	    
+	    cout << "Entered infinite while" << endl;
 	    int total_read = read (fd, buffer, BUFFER_LEN);
 	    if (total_read < 0)
 		    printf("Read error");
@@ -126,6 +127,7 @@ namespace tomcat {
 	    
 	    cout << "Reached here" << endl;
 	    while(i < total_read) {
+		    cout << "Looking for event" << endl;
 		    struct inotify_event *event = (struct inotify_event*) &buffer[i];
 		    if (event->len) {
 			    if (event->mask & IN_CREATE) {
@@ -137,11 +139,18 @@ namespace tomcat {
 			    i += MONITOR_EVENT_SIZE + event->len;
 		    }
 	    }
+	    cout << "After event found" << endl;
 	    // Use the filename variable here to get the name of the file
-	    filename = "/home/vatsav14/code/test/" + filename;
-	    this->rgb_image = cv::imread(filename);
-	    cout << "This is the name of the file: " << filename << endl; 
+	    if (filename[0] == '.')
+		    continue;
+	    filename = monitor_path + "/" + filename;
 
+	    do {
+	    	this->rgb_image = cv::imread(filename);
+		usleep(50);
+	    } while(this->rgb_image.empty());
+	    
+	    cout << "This is the name of the file: " << filename << endl;
 	    // -----------------------------------
 	    // OpenFace code begins
 	    // -----------------------------------
