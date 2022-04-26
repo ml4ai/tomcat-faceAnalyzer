@@ -46,7 +46,7 @@ namespace tomcat {
             this->arguments.insert(this->arguments.begin(), "-f");
         }
         else {
-            this->arguments.insert(this->arguments.begin(), "0");
+            this->arguments.insert(this->arguments.begin(), "-1");
             this->arguments.insert(this->arguments.begin(), "-device");
         }
 
@@ -113,11 +113,12 @@ namespace tomcat {
 	watch_desc = inotify_add_watch(fd, monitor_path.c_str(), IN_CREATE);
 
 	if (watch_desc == -1)
-		printf("Couldn't add watch to the path");
+		printf("Couldn't add watch to the path\n");
 	else
 		cout << "Monitoring path " << monitor_path << endl;
 	while (1) {
-	    cout << "Entered infinite while" << endl;
+	    // TODO: All commented lines are for debug. Remove later
+	    //cout << "Entered infinite while" << endl;
 	    int total_read = read (fd, buffer, BUFFER_LEN);
 	    if (total_read < 0)
 		    printf("Read error");
@@ -125,9 +126,9 @@ namespace tomcat {
 	    int i = 0;
 	    string filename = "";
 	    
-	    cout << "Reached here" << endl;
+	    //cout << "Reached here" << endl;
 	    while(i < total_read) {
-		    cout << "Looking for event" << endl;
+		    //cout << "Looking for event" << endl;
 		    struct inotify_event *event = (struct inotify_event*) &buffer[i];
 		    if (event->len) {
 			    if (event->mask & IN_CREATE) {
@@ -139,7 +140,8 @@ namespace tomcat {
 			    i += MONITOR_EVENT_SIZE + event->len;
 		    }
 	    }
-	    cout << "After event found" << endl;
+	    //cout << "After event found" << endl;
+	    
 	    // Use the filename variable here to get the name of the file
 	    if (filename[0] == '.')
 		    continue;
@@ -150,7 +152,8 @@ namespace tomcat {
 		usleep(50);
 	    } while(this->rgb_image.empty());
 	    
-	    cout << "This is the name of the file: " << filename << endl;
+	    //cout << "This is the name of the file: " << filename << endl;
+	    
 	    // -----------------------------------
 	    // OpenFace code begins
 	    // -----------------------------------
