@@ -13,6 +13,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <string>
+#include <chrono>
 
 #define MAX_EVENT_MONITOR 2048
 #define NAME_LEN 32
@@ -21,6 +22,7 @@
 
 using namespace std;
 using namespace nlohmann;
+using namespace std::chrono;
 namespace pt = boost::posix_time;
 
 typedef vector<pair<string, double>> au_vector;
@@ -109,7 +111,7 @@ namespace tomcat {
 		printf("Notify did not initialize");
 	
 	// Change the destination to the location where images are going to be added
-	string monitor_path = "/data/cat/lion";
+	string monitor_path = "/data/cat/LangLab/Study3/Pilot/Exp_test/lion/Face_images";
 	watch_desc = inotify_add_watch(fd, monitor_path.c_str(), IN_CREATE);
 
 	if (watch_desc == -1)
@@ -278,9 +280,13 @@ namespace tomcat {
             // JSON output
             json output;
 
-            string timestamp =
-            	pt::to_iso_extended_string(pt::microsec_clock::universal_time()) +
-            	"Z";
+            //string timestamp =
+            //	pt::to_iso_extended_string(pt::microsec_clock::universal_time()) +
+            //	"Z";
+	    
+	    // This is the timestamp in MICROSECONDS since the Epoch
+	    uint64_t timestamp = duration_cast<microseconds>
+		    (system_clock::now().time_since_epoch()).count();
 
             // Header block
             output["header"] = {
