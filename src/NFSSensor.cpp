@@ -1,4 +1,4 @@
-#include "WebcamSensor.h"
+#include "NFSSensor.h"
 #include <FaceAnalyser.h>
 #include <GazeEstimation.h>
 #include <LandmarkCoreIncludes.h>
@@ -8,16 +8,28 @@
 #include <boost/date_time/time_facet.hpp>
 #include <nlohmann/json.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/inotify.h>
+#include <unistd.h>
+#include <string>
+#include <chrono>
+
+#define MAX_EVENT_MONITOR 2048
+#define NAME_LEN 32
+#define MONITOR_EVENT_SIZE (sizeof(struct inotify_event))
+#define BUFFER_LEN MAX_EVENT_MONITOR*(MONITOR_EVENT_SIZE+NAME_LEN)
 
 using namespace std;
 using namespace nlohmann;
+using namespace std::chrono;
 namespace pt = boost::posix_time;
 
 typedef vector<pair<string, double>> au_vector;
 
 namespace tomcat {
 
-    void WebcamSensor::initialize(string exp,
+    void NFSSensor::initialize(string exp,
                                   string trial,
                                   string pname,
                                   bool ind,
@@ -36,7 +48,7 @@ namespace tomcat {
             this->arguments.insert(this->arguments.begin(), "-f");
         }
         else {
-            this->arguments.insert(this->arguments.begin(), "0");
+            this->arguments.insert(this->arguments.begin(), "-1");
             this->arguments.insert(this->arguments.begin(), "-device");
         }
 
@@ -53,7 +65,7 @@ namespace tomcat {
         this->fps_tracker.AddFrame();
     };
 
-    void WebcamSensor::get_observation() {
+    void NFSSensor::get_observation() {
         using cv::Point2f;
         using cv::Point3f;
         using GazeAnalysis::EstimateGaze;
@@ -80,10 +92,66 @@ namespace tomcat {
             this->sequence_reader.cx,
             this->sequence_reader.cy,
             this->sequence_reader.fps);
+	
+	// This command gets the frame from the webcam (Uncomment to remove inotify functionality)
+        //this->rgb_image = this->sequence_reader.GetNextFrame();
 
-        this->rgb_image = this->sequence_reader.GetNextFrame();
+        //while (!this->rgb_image.empty()) {
+	
+	// -----------------------------------------
+	// Inotify code
+	// -----------------------------------------
+	
+	int fd, watch_desc;
+	char buffer[BUFFER_LEN];
+	fd = inotify_init();
+	int testing_int = 1;
 
-        while (!this->rgb_image.empty()) {
+	if (fd < 0)
+		printf("Notify did not initialize");
+	
+	// Change the destination to the location where images are going to be added
+	string monitor_path = "/data/cat/LangLab/Study3/Pilot/Exp_test/lion/Face_images";
+	watch_desc = inotify_add_watch(fd, monitor_path.c_str(), IN_CREATE);
+
+	if (watch_desc == -1)
+		printf("Couldn't add watch to the path\n");
+	else
+		cout << "Monitoring path " << monitor_path << endl;
+	while (1) {
+	    int total_read = read (fd, buffer, BUFFER_LEN);
+	    if (total_read < 0)
+		    printf("Read error");
+
+	    int i = 0;
+	    string filename = "";
+	    
+	    while(i < total_read) {
+		    struct inotify_event *event = (struct inotify_event*) &buffer[i];
+		    if (event->len) {
+			    if (event->mask & IN_CREATE) {
+				    if (event->mask & IN_ISDIR)
+					    cout << "This is a directory";
+				    else
+					    filename = event->name;
+			    }
+			    i += MONITOR_EVENT_SIZE + event->len;
+		    }
+	    }
+	    
+	    // Use the filename variable here to get the name of the file
+	    if (filename[0] == '.')
+		    continue;
+	    filename = monitor_path + "/" + filename;
+
+	    do {
+	    	this->rgb_image = cv::imread(filename);
+		usleep(50);
+	    } while(this->rgb_image.empty());
+	    
+	    // -----------------------------------
+	    // OpenFace code begins
+	    // -----------------------------------
 
             // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
@@ -205,9 +273,13 @@ namespace tomcat {
             // JSON output
             json output;
 
-            string timestamp =
-            	pt::to_iso_extended_string(pt::microsec_clock::universal_time()) +
-            	"Z";
+            //string timestamp =
+            //	pt::to_iso_extended_string(pt::microsec_clock::universal_time()) +
+            //	"Z";
+	    
+	    // This is the timestamp in MICROSECONDS since the Epoch
+	    uint64_t timestamp = duration_cast<microseconds>
+		    (system_clock::now().time_since_epoch()).count();
 
             // Header block
             output["header"] = {
@@ -320,15 +392,19 @@ namespace tomcat {
             else
                 cout << output.dump() << endl;
 
-            // Grabbing the next frame in the sequence
-            this->rgb_image = this->sequence_reader.GetNextFrame();
+            // Grabbing the next frame in the sequence (removed for inotify)
+            // this->rgb_image = this->sequence_reader.GetNextFrame();
         }
-
+	
         this->sequence_reader.Close();
 
         // Reset the models for the next video
         face_analyser.Reset();
         face_model.Reset();
+	
+	// Close the inotify watch
+	inotify_rm_watch(fd, watch_desc);
+	close(fd);
     }
 
     // Reference: Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial
@@ -337,7 +413,7 @@ namespace tomcat {
     // Refer to: https://en.wikipedia.org/wiki/Facial_Action_Coding_System
     // and https://imotions.com/blog/facial-action-coding-system/
 
-    unordered_set<string> WebcamSensor::get_emotions(json au) {
+    unordered_set<string> NFSSensor::get_emotions(json au) {
         unordered_set<string> labels;
 
         if (au["AU06"]["occurrence"] == 1 && au["AU12"]["occurrence"] == 1) {

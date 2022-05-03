@@ -1,4 +1,5 @@
 #include "WebcamSensor.h"
+#include "NFSSensor.h"
 #include <csignal>
 #include <iostream>
 #include <string>
@@ -15,6 +16,7 @@ namespace po = boost::program_options;
 int main(int ac, char* av[]) {
     string exp_id, trial_id, playername, of_dir, file_path;
     bool indent, visualize, emotion;
+    int input_source;
     // Boost command line options
     try {
 
@@ -30,6 +32,9 @@ int main(int ac, char* av[]) {
                             "Set player name")("mloc",
                                                po::value<string>(&of_dir),
                                                "Set OpenFace models directory")(
+	    "input_source",
+	    po::value<int>(&input_source)->default_value(0),
+	    "0 for webcam, 1 for nfs")(
             "indent",
             po::bool_switch(&indent)->default_value(false),
             "Indent output JSON by four spaces")(
@@ -77,10 +82,18 @@ int main(int ac, char* av[]) {
         cerr << "Exception of unknown type!" << endl;
     }
 
-    WebcamSensor camsensor;
-    camsensor.initialize(
-        exp_id, trial_id, playername, indent, visualize, file_path, emotion);
-    camsensor.get_observation();
+    if (input_source == 0) {
+    	WebcamSensor camsensor;
+    	camsensor.initialize(
+        	exp_id, trial_id, playername, indent, visualize, file_path, emotion);
+    	camsensor.get_observation();
+    }
+    else {
+	NFSSensor nfssensor;
+	nfssensor.initialize(
+                exp_id, trial_id, playername, indent, visualize, file_path, emotion);
+	nfssensor.get_observation();
+    }
 
     return 0;
 }
