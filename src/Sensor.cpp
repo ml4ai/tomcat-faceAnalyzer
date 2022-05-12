@@ -1,4 +1,4 @@
-#include "NFSSensor.h"
+#include "Sensor.h"
 #include <FaceAnalyser.h>
 #include <GazeEstimation.h>
 #include <LandmarkCoreIncludes.h>
@@ -29,13 +29,14 @@ typedef vector<pair<string, double>> au_vector;
 
 namespace tomcat {
 
-    void NFSSensor::initialize(string exp,
+    void Sensor::initialize(string exp,
                                   string trial,
                                   string pname,
                                   bool ind,
                                   bool vis,
-                                  string file_path,
-                                  bool output_emotions) {
+                                  string path,
+                                  bool output_emotions,
+                                  int input_source) {
         // Initialize the experiment ID, trial ID and player name
         this->exp_id = exp;
         this->trial_id = trial;
@@ -43,14 +44,28 @@ namespace tomcat {
         this->indent = ind;
         this->visual = vis;
         this->output_emotions = output_emotions;
-        if (file_path.compare("null") != 0) {
-            this->arguments.insert(this->arguments.begin(), file_path);
-            this->arguments.insert(this->arguments.begin(), "-f");
+        this->input_source = input_source;
+
+        if (this->input_source == 0) {
+            if (path.compare("null") != 0) {
+                this->arguments.insert(this->arguments.begin(), path);
+                this->arguments.insert(this->arguments.begin(), "-f");
+            }
+            else {
+                this->arguments.insert(this->arguments.begin(), "0");
+                this->arguments.insert(this->arguments.begin(), "-device");
+            }
         }
         else {
+            if (path.compare("null") == 0) 
+                throw runtime_error("Please provide a valid path for inotify using option --file");
+                
             this->arguments.insert(this->arguments.begin(), "-1");
             this->arguments.insert(this->arguments.begin(), "-device");
+            
+            this->inotify_reader.initPath(path);
         }
+        
 
         // The modules that are being used for tracking
         this->face_model = LandmarkDetector::CLNF();
@@ -65,7 +80,7 @@ namespace tomcat {
         this->fps_tracker.AddFrame();
     };
 
-    void NFSSensor::get_observation() {
+    void Sensor::get_observation() {
         using cv::Point2f;
         using cv::Point3f;
         using GazeAnalysis::EstimateGaze;
@@ -102,52 +117,17 @@ namespace tomcat {
 	// Inotify code
 	// -----------------------------------------
 	
-	int fd, watch_desc;
-	char buffer[BUFFER_LEN];
-	fd = inotify_init();
-	int testing_int = 1;
-
-	if (fd < 0)
-		printf("Notify did not initialize");
 	
-	// Change the destination to the location where images are going to be added
-	string monitor_path = "/data/cat/LangLab/Study3/Pilot/Exp_test/lion/Face_images";
-	watch_desc = inotify_add_watch(fd, monitor_path.c_str(), IN_CREATE);
-
-	if (watch_desc == -1)
-		printf("Couldn't add watch to the path\n");
-	else
-		cout << "Monitoring path " << monitor_path << endl;
+	
 	while (1) {
-	    int total_read = read (fd, buffer, BUFFER_LEN);
-	    if (total_read < 0)
-		    printf("Read error");
-
-	    int i = 0;
-	    string filename = "";
-	    
-	    while(i < total_read) {
-		    struct inotify_event *event = (struct inotify_event*) &buffer[i];
-		    if (event->len) {
-			    if (event->mask & IN_CREATE) {
-				    if (event->mask & IN_ISDIR)
-					    cout << "This is a directory";
-				    else
-					    filename = event->name;
-			    }
-			    i += MONITOR_EVENT_SIZE + event->len;
-		    }
-	    }
-	    
-	    // Use the filename variable here to get the name of the file
-	    if (filename[0] == '.')
-		    continue;
-	    filename = monitor_path + "/" + filename;
-
-	    do {
-	    	this->rgb_image = cv::imread(filename);
-		usleep(50);
-	    } while(this->rgb_image.empty());
+	    cout << input_source;
+	    if (this->input_source == 1)
+	        this->rgb_image = this->inotify_reader.GetNextFrame();
+	    else
+	        this->rgb_image = this->sequence_reader.GetNextFrame();
+	        
+	    if(this->rgb_image.empty())
+	        break;
 	    
 	    // -----------------------------------
 	    // OpenFace code begins
@@ -401,10 +381,7 @@ namespace tomcat {
         // Reset the models for the next video
         face_analyser.Reset();
         face_model.Reset();
-	
-	// Close the inotify watch
-	inotify_rm_watch(fd, watch_desc);
-	close(fd);
+	    this->inotify_reader.closeInotify();
     }
 
     // Reference: Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial
@@ -413,7 +390,7 @@ namespace tomcat {
     // Refer to: https://en.wikipedia.org/wiki/Facial_Action_Coding_System
     // and https://imotions.com/blog/facial-action-coding-system/
 
-    unordered_set<string> NFSSensor::get_emotions(json au) {
+    unordered_set<string> Sensor::get_emotions(json au) {
         unordered_set<string> labels;
 
         if (au["AU06"]["occurrence"] == 1 && au["AU12"]["occurrence"] == 1) {
@@ -449,3 +426,4 @@ namespace tomcat {
     }
 
 } // namespace tomcat
+
