@@ -46,23 +46,30 @@ namespace tomcat {
         this->output_emotions = output_emotions;
         this->input_source = input_source;
 
+        // If the input source is the webcam (source 0)
         if (this->input_source == 0) {
+            // If the input is provided in the form of a video file
             if (path.compare("null") != 0) {
                 this->arguments.insert(this->arguments.begin(), path);
                 this->arguments.insert(this->arguments.begin(), "-f");
-            }
-            else {
+            } else {
+                // Initialize the webcam
                 this->arguments.insert(this->arguments.begin(), "0");
                 this->arguments.insert(this->arguments.begin(), "-device");
             }
         }
+        
+        // If the input source is the NFS directory (source 1)
         else {
+            // If the path for the NFS directory isn't provided as an argument
             if (path.compare("null") == 0) 
-                throw runtime_error("Please provide a valid path for inotify using option --file");
-                
+                throw runtime_error("Please provide a valid NFS path using option --file");
+
+            // Initialize the Sensor such that the webcam is turned off
             this->arguments.insert(this->arguments.begin(), "-1");
             this->arguments.insert(this->arguments.begin(), "-device");
             
+            // Initialize the inotify watch with the provided path
             this->inotify_reader.initPath(path);
         }
         
@@ -108,30 +115,16 @@ namespace tomcat {
             this->sequence_reader.cy,
             this->sequence_reader.fps);
 	
-	// This command gets the frame from the webcam (Uncomment to remove inotify functionality)
-        //this->rgb_image = this->sequence_reader.GetNextFrame();
-
-        //while (!this->rgb_image.empty()) {
 	
-	// -----------------------------------------
-	// Inotify code
-	// -----------------------------------------
-	
-	
-	
-	while (1) {
-	    cout << input_source;
-	    if (this->input_source == 1)
-	        this->rgb_image = this->inotify_reader.GetNextFrame();
-	    else
-	        this->rgb_image = this->sequence_reader.GetNextFrame();
+	    while (1) {
+	        // Based on the input source, use the appropriate GetNextFrame() function
+	        if (this->input_source == 1)
+	            this->rgb_image = this->inotify_reader.GetNextFrame();
+	        else
+	            this->rgb_image = this->sequence_reader.GetNextFrame();
 	        
-	    if(this->rgb_image.empty())
-	        break;
-	    
-	    // -----------------------------------
-	    // OpenFace code begins
-	    // -----------------------------------
+	        if(this->rgb_image.empty())
+	            break;
 
             // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
@@ -252,14 +245,10 @@ namespace tomcat {
 
             // JSON output
             json output;
-
-            //string timestamp =
-            //	pt::to_iso_extended_string(pt::microsec_clock::universal_time()) +
-            //	"Z";
 	    
-	    // This is the timestamp in MICROSECONDS since the Epoch
-	    uint64_t timestamp = duration_cast<microseconds>
-		    (system_clock::now().time_since_epoch()).count();
+	        // This is the timestamp in MICROSECONDS since the Epoch
+	        uint64_t timestamp = duration_cast<microseconds>
+		        (system_clock::now().time_since_epoch()).count();
 
             // Header block
             output["header"] = {
@@ -381,7 +370,10 @@ namespace tomcat {
         // Reset the models for the next video
         face_analyser.Reset();
         face_model.Reset();
-	    this->inotify_reader.closeInotify();
+        
+        // If we were using the NFS directory as an input, terminate the inotify watch
+        if (this->input_source == 1)
+	        this->inotify_reader.closeInotify();
     }
 
     // Reference: Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial
