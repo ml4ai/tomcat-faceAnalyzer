@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SequenceCapture.h>
+#include <InotifySequenceCapture.h>
 #include <VisualizationUtils.h>
 #include <Visualizer.h>
 #include <nlohmann/json.hpp>
@@ -8,9 +9,9 @@
 
 namespace tomcat {
 
-    class WebcamSensor {
+    class Sensor {
       public:
-        WebcamSensor()
+        Sensor()
             : visualizer(true, false, false, false),
               det_parameters(this->arguments) {}
 
@@ -20,7 +21,8 @@ namespace tomcat {
                         bool ind,
                         bool vis,
                         std::string file_path,
-                        bool output_emotions);
+                        bool output_emotions,
+                        int input_source);
         void get_observation();
 
       private:
@@ -28,6 +30,7 @@ namespace tomcat {
         Utilities::Visualizer visualizer;
         cv::Mat rgb_image;
         Utilities::SequenceCapture sequence_reader;
+        Utilities::InotifySequenceCapture inotify_reader;
         LandmarkDetector::CLNF face_model;
         LandmarkDetector::FaceModelParameters det_parameters;
         Utilities::FpsTracker fps_tracker;
@@ -39,6 +42,7 @@ namespace tomcat {
         bool visual;
         bool output_emotions;
         std::unordered_set<std::string> get_emotions(nlohmann::json au);
+        int input_source;
     };
 
 } // namespace tomcat

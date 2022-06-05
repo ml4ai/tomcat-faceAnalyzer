@@ -1,4 +1,4 @@
-#include "WebcamSensor.h"
+#include "Sensor.h"
 #include <csignal>
 #include <iostream>
 #include <string>
@@ -13,8 +13,9 @@ using namespace tomcat;
 namespace po = boost::program_options;
 
 int main(int ac, char* av[]) {
-    string exp_id, trial_id, playername, of_dir, file_path;
+    string exp_id, trial_id, playername, of_dir, path;
     bool indent, visualize, emotion;
+    int input_source;
     // Boost command line options
     try {
 
@@ -30,14 +31,17 @@ int main(int ac, char* av[]) {
                             "Set player name")("mloc",
                                                po::value<string>(&of_dir),
                                                "Set OpenFace models directory")(
+	    "input_source",
+	    po::value<int>(&input_source)->default_value(0),
+	    "0 for webcam, 1 for nfs")(
             "indent",
             po::bool_switch(&indent)->default_value(false),
             "Indent output JSON by four spaces")(
             "visualize",
             po::bool_switch(&visualize)->default_value(false),
             "Enable visualization")(
-            "file,f",
-            po::value<string>(&file_path)->default_value("null"),
+            "path,p",
+            po::value<string>(&path)->default_value("null"),
             "Specify an input video/image file")(
             "emotion",
             po::bool_switch(&emotion)->default_value(false),
@@ -77,10 +81,17 @@ int main(int ac, char* av[]) {
         cerr << "Exception of unknown type!" << endl;
     }
 
-    WebcamSensor camsensor;
-    camsensor.initialize(
-        exp_id, trial_id, playername, indent, visualize, file_path, emotion);
-    camsensor.get_observation();
+    Sensor sensor;
+    sensor.initialize(
+        exp_id, 
+        trial_id, 
+        playername, 
+        indent, 
+        visualize, 
+        path, 
+        emotion, 
+        input_source);
+    sensor.get_observation();
 
     return 0;
 }

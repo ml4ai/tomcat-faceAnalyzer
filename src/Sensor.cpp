@@ -1,4 +1,4 @@
-#include "WebcamSensor.h"
+#include "Sensor.h"
 #include <FaceAnalyser.h>
 #include <GazeEstimation.h>
 #include <LandmarkCoreIncludes.h>
@@ -8,22 +8,35 @@
 #include <boost/date_time/time_facet.hpp>
 #include <nlohmann/json.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/inotify.h>
+#include <unistd.h>
+#include <string>
+#include <chrono>
+
+#define MAX_EVENT_MONITOR 2048
+#define NAME_LEN 32
+#define MONITOR_EVENT_SIZE (sizeof(struct inotify_event))
+#define BUFFER_LEN MAX_EVENT_MONITOR*(MONITOR_EVENT_SIZE+NAME_LEN)
 
 using namespace std;
 using namespace nlohmann;
+using namespace std::chrono;
 namespace pt = boost::posix_time;
 
 typedef vector<pair<string, double>> au_vector;
 
 namespace tomcat {
 
-    void WebcamSensor::initialize(string exp,
+    void Sensor::initialize(string exp,
                                   string trial,
                                   string pname,
                                   bool ind,
                                   bool vis,
-                                  string file_path,
-                                  bool output_emotions) {
+                                  string path,
+                                  bool output_emotions,
+                                  int input_source) {
         // Initialize the experiment ID, trial ID and player name
         this->exp_id = exp;
         this->trial_id = trial;
@@ -31,14 +44,35 @@ namespace tomcat {
         this->indent = ind;
         this->visual = vis;
         this->output_emotions = output_emotions;
-        if (file_path.compare("null") != 0) {
-            this->arguments.insert(this->arguments.begin(), file_path);
-            this->arguments.insert(this->arguments.begin(), "-f");
+        this->input_source = input_source;
+
+        // If the input source is the webcam (source 0)
+        if (this->input_source == 0) {
+            // If the input is provided in the form of a video file
+            if (path.compare("null") != 0) {
+                this->arguments.insert(this->arguments.begin(), path);
+                this->arguments.insert(this->arguments.begin(), "-f");
+            } else {
+                // Initialize the webcam
+                this->arguments.insert(this->arguments.begin(), "0");
+                this->arguments.insert(this->arguments.begin(), "-device");
+            }
         }
+        
+        // If the input source is the NFS directory (source 1)
         else {
-            this->arguments.insert(this->arguments.begin(), "0");
+            // If the path for the NFS directory isn't provided as an argument
+            if (path.compare("null") == 0) 
+                throw runtime_error("Please provide a valid NFS path using option --file");
+
+            // Initialize the Sensor such that the webcam is turned off
+            this->arguments.insert(this->arguments.begin(), "-1");
             this->arguments.insert(this->arguments.begin(), "-device");
+            
+            // Initialize the inotify watch with the provided path
+            this->inotify_reader.initPath(path);
         }
+        
 
         // The modules that are being used for tracking
         this->face_model = LandmarkDetector::CLNF();
@@ -53,7 +87,7 @@ namespace tomcat {
         this->fps_tracker.AddFrame();
     };
 
-    void WebcamSensor::get_observation() {
+    void Sensor::get_observation() {
         using cv::Point2f;
         using cv::Point3f;
         using GazeAnalysis::EstimateGaze;
@@ -80,10 +114,17 @@ namespace tomcat {
             this->sequence_reader.cx,
             this->sequence_reader.cy,
             this->sequence_reader.fps);
-
-        this->rgb_image = this->sequence_reader.GetNextFrame();
-
-        while (!this->rgb_image.empty()) {
+	
+	
+	    while (1) {
+	        // Based on the input source, use the appropriate GetNextFrame() function
+	        if (this->input_source == 1)
+	            this->rgb_image = this->inotify_reader.GetNextFrame();
+	        else
+	            this->rgb_image = this->sequence_reader.GetNextFrame();
+	        
+	        if(this->rgb_image.empty())
+	            break;
 
             // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
@@ -204,10 +245,10 @@ namespace tomcat {
 
             // JSON output
             json output;
-
-            string timestamp =
-            	pt::to_iso_extended_string(pt::microsec_clock::universal_time()) +
-            	"Z";
+	    
+	        // This is the timestamp in MICROSECONDS since the Epoch
+	        uint64_t timestamp = duration_cast<microseconds>
+		        (system_clock::now().time_since_epoch()).count();
 
             // Header block
             output["header"] = {
@@ -320,15 +361,19 @@ namespace tomcat {
             else
                 cout << output.dump() << endl;
 
-            // Grabbing the next frame in the sequence
-            this->rgb_image = this->sequence_reader.GetNextFrame();
+            // Grabbing the next frame in the sequence (removed for inotify)
+            // this->rgb_image = this->sequence_reader.GetNextFrame();
         }
-
+	
         this->sequence_reader.Close();
 
         // Reset the models for the next video
         face_analyser.Reset();
         face_model.Reset();
+        
+        // If we were using the NFS directory as an input, terminate the inotify watch
+        if (this->input_source == 1)
+	        this->inotify_reader.closeInotify();
     }
 
     // Reference: Friesen, W. V., & Ekman, P. (1983). EMFACS-7: Emotional facial
@@ -337,7 +382,7 @@ namespace tomcat {
     // Refer to: https://en.wikipedia.org/wiki/Facial_Action_Coding_System
     // and https://imotions.com/blog/facial-action-coding-system/
 
-    unordered_set<string> WebcamSensor::get_emotions(json au) {
+    unordered_set<string> Sensor::get_emotions(json au) {
         unordered_set<string> labels;
 
         if (au["AU06"]["occurrence"] == 1 && au["AU12"]["occurrence"] == 1) {
@@ -373,3 +418,4 @@ namespace tomcat {
     }
 
 } // namespace tomcat
+
