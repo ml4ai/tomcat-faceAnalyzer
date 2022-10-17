@@ -36,7 +36,10 @@ namespace tomcat {
                                   bool vis,
                                   string path,
                                   bool output_emotions,
-                                  int input_source) {
+                                  int input_source,
+				  int output_source,
+				  string out_path,
+				  string bus) {
         // Initialize the experiment ID, trial ID and player name
         this->exp_id = exp;
         this->trial_id = trial;
@@ -45,6 +48,7 @@ namespace tomcat {
         this->visual = vis;
         this->output_emotions = output_emotions;
         this->input_source = input_source;
+	this->output_source = output_source;
 
         // If the input source is the webcam (source 0)
         if (this->input_source == 0) {
@@ -72,7 +76,23 @@ namespace tomcat {
             // Initialize the inotify watch with the provided path
             this->inotify_reader.initPath(path);
         }
-        
+
+	// If the output source is a file (source 1)
+	if (this->output_source == 1) {
+		if (out_path.compare("null") == 0)
+			throw runtime_error("To print output to a file, please provide a valid path using option --out_path");
+
+		// Create the file pointer with the given path
+		this->out_file = fopen("outFile.txt", "w");
+	}
+
+	// If the output source is mqtt (source 2)
+	if (this->output_source == 2) {
+	       if (bus.compare("null") == 0)
+			throw runtime_error("To publish output to mqtt, please provide a valid message bus using option --bus");
+		
+       		// TODO: Initialize mqtt	       
+	}
 
         // The modules that are being used for tracking
         this->face_model = LandmarkDetector::CLNF();
@@ -353,19 +373,44 @@ namespace tomcat {
                                        {{"x", pose_estimate[3]},
                                         {"y", pose_estimate[4]},
                                         {"z", pose_estimate[5]}}}};
+		
+	    // Output to specified stream
+	    switch (this->output_source) {
+		case 0:	// In this case, we need to print to stdout
+			if (this->indent)
+				cout << output.dump(4) << endl;
+			else
+				cout << output.dump() << endl;
+			break;
 
+		case 1: // In this case, print to a file
+			if (this->indent)
+				fprintf(out_file, "%s\n", output.dump(4).c_str());
+			else
+				fprintf(out_file, "%s\n", output.dump().c_str());
+			fflush(out_file);
+			break;
+
+		case 2: // TODO: Code for mqtt goes here
+			cout << "MQTT Code pending" << endl;
+			break;
+	    }
             // Only indent if the user specifies through command line option
             // --indent
-            if (this->indent)
-                cout << output.dump(4) << endl;
-            else
-                cout << output.dump() << endl;
+            //if (this->indent)
+            //   cout << output.dump(4) << endl;
+            //else
+            //  cout << output.dump() << endl;
 
             // Grabbing the next frame in the sequence (removed for inotify)
             // this->rgb_image = this->sequence_reader.GetNextFrame();
         }
 	
         this->sequence_reader.Close();
+	
+	// Close any file that was opened
+	if (this->output_source == 1)
+		fclose(this->out_file);
 
         // Reset the models for the next video
         face_analyser.Reset();
