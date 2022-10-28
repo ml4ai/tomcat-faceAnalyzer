@@ -67,7 +67,7 @@ namespace tomcat {
         else {
             // If the path for the NFS directory isn't provided as an argument
             if (path.compare("null") == 0) 
-                throw runtime_error("Please provide a valid NFS path using option --file");
+                throw runtime_error("Please provide a valid NFS path using option --path");
 
             // Initialize the Sensor such that the webcam is turned off
             this->arguments.insert(this->arguments.begin(), "-1");
@@ -75,6 +75,7 @@ namespace tomcat {
             
             // Initialize the inotify watch with the provided path
             this->inotify_reader.initPath(path);
+	    cout << "Monitoring: " << path << endl;
         }
 
 	// If the output source is a file (source 1)
@@ -83,7 +84,8 @@ namespace tomcat {
 			throw runtime_error("To print output to a file, please provide a valid path using option --out_path");
 
 		// Create the file pointer with the given path
-		this->out_file = fopen("outFile.txt", "w");
+		string totalPath = out_path + "outFile.metadata";
+		this->out_file = fopen(totalPath.c_str(), "w");
 	}
 
 	// If the output source is mqtt (source 2)
