@@ -1,6 +1,7 @@
 #include "InotifySequenceCapture.h"
 
 #include <iostream>
+#include <string>
 #include <unistd.h>
 #include <sys/inotify.h>
 
@@ -15,18 +16,28 @@ using namespace Utilities;
 void InotifySequenceCapture::initPath(const std::string &path) {
     this->monitorPath = path;
     this->fd = inotify_init();
+    
+    if (fd < 0)
+	    std::cerr << "Notify did not initialize";
+
     this->watch_desc = inotify_add_watch(this->fd, path.c_str(), IN_CREATE);
+
+    if (watch_desc == -1)
+	    std::cerr << "Couldn't add watch to the path" << std::endl;
+    else
+	    std::cout << "Monitoring path " << path << std::endl;
 }
 
 cv::Mat InotifySequenceCapture::GetNextFrame() {
 	char buffer[BUFFER_LEN];
-		
+	std::string filename = "";
+	do {
     int total_read = read (this->fd, buffer, BUFFER_LEN);
     if (total_read < 0)
 	    printf("Read error");
 
     int i = 0;
-    std::string filename = "";
+    filename = "";
     
     while(i < total_read) {
 	    struct inotify_event *event = (struct inotify_event*) &buffer[i];
@@ -34,16 +45,20 @@ cv::Mat InotifySequenceCapture::GetNextFrame() {
 		    if (event->mask & IN_CREATE) {
 			    if (event->mask & IN_ISDIR)
 				    std::cout << "This is a directory";
-			    else
+			    else{
+				    std::cout << "file detected" << std::endl;
 				    filename = event->name;
+			    }
 		    }
 		    i += MONITOR_EVENT_SIZE + event->len;
 	    }
-    }
+    }} while(!(filename.substr(filename.find_last_of(".") + 1) == "png"));
+    std::cout << "escaped while " << filename << std::endl;
     
     // Use the filename variable here to get the name of the file
     //if (filename[0] == '.')
 	//    continue;
+
     filename = this->monitorPath + "/" + filename;
 
     cv::Mat retImg;
@@ -52,6 +67,8 @@ cv::Mat InotifySequenceCapture::GetNextFrame() {
     	retImg = cv::imread(filename);
 	    usleep(SLEEP_TIME_MICROSECONDS);
     } while(retImg.empty());
+
+    std::cout << "escaped" << std::endl;
     
     return retImg;
 }
