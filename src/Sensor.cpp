@@ -77,8 +77,6 @@ namespace tomcat {
             this->inotify_reader.initPath(path);
 	    cout << "Monitoring: " << path << endl;
         }
-	
-	cout << output_source << endl;
 
 	// If the output source is a file (source 1)
 	if (this->output_source == 1) {
@@ -138,23 +136,24 @@ namespace tomcat {
             this->sequence_reader.cx,
             this->sequence_reader.cy,
             this->sequence_reader.fps);
+
+        int counter = 0;
 	
-	
-	    cout << "Before while" << endl;
 	    while (1) {
-		    cout << "after while" << endl;
 	        // Based on the input source, use the appropriate GetNextFrame() function
 	        if (this->input_source == 1)
 	            this->rgb_image = this->inotify_reader.GetNextFrame();
 	        else
 	            this->rgb_image = this->sequence_reader.GetNextFrame();
-	        
-		cout << "Before break" << endl;
 
 	        if(this->rgb_image.empty())
 	            break;
 
-	    // Converting to grayscale
+            counter += 1;
+            if (counter % 100 == 0)
+                cout << "Read " << counter << " files..." << endl;
+
+	        // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
 
             // The actual facial landmark detection / tracking
