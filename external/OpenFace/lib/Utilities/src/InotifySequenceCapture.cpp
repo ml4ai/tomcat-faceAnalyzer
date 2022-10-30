@@ -16,7 +16,7 @@ using namespace Utilities;
 void InotifySequenceCapture::initPath(const std::string &path) {
     this->monitorPath = path;
     this->fd = inotify_init();
-    
+
     if (fd < 0)
 	    std::cerr << "Notify did not initialize";
 
@@ -28,6 +28,7 @@ void InotifySequenceCapture::initPath(const std::string &path) {
 
 cv::Mat InotifySequenceCapture::GetNextFrame() {
 	char buffer[BUFFER_LEN];
+
 	std::string filename = "";
 	do {
 		int total_read = read (this->fd, buffer, BUFFER_LEN);

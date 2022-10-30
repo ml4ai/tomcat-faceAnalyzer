@@ -30,16 +30,16 @@ typedef vector<pair<string, double>> au_vector;
 namespace tomcat {
 
     void Sensor::initialize(string exp,
-                                  string trial,
-                                  string pname,
-                                  bool ind,
-                                  bool vis,
-                                  string path,
-                                  bool output_emotions,
-                                  int input_source,
-				  int output_source,
-				  string out_path,
-				  string bus) {
+                            string trial,
+                            string pname,
+                            bool ind,
+                            bool vis,
+                            string path,
+                            bool output_emotions,
+                            int input_source,
+                            int output_source,
+                            string out_path,
+                            string bus) {
         // Initialize the experiment ID, trial ID and player name
         this->exp_id = exp;
         this->trial_id = trial;
@@ -48,7 +48,7 @@ namespace tomcat {
         this->visual = vis;
         this->output_emotions = output_emotions;
         this->input_source = input_source;
-	this->output_source = output_source;
+	      this->output_source = output_source;
 
         // If the input source is the webcam (source 0)
         if (this->input_source == 0) {
@@ -75,26 +75,26 @@ namespace tomcat {
             
             // Initialize the inotify watch with the provided path
             this->inotify_reader.initPath(path);
-	    cout << "Monitoring: " << path << endl;
+            cout << "Monitoring: " << path << endl;
         }
 
-	// If the output source is a file (source 1)
-	if (this->output_source == 1) {
-		if (out_path.compare("null") == 0)
-			throw runtime_error("To print output to a file, please provide a valid path using option --out_path");
+        // If the output source is a file (source 1)
+        if (this->output_source == 1) {
+          if (out_path.compare("null") == 0)
+            throw runtime_error("To print output to a file, please provide a valid path using option --out_path");
 
-		// Create the file pointer with the given path
-		string totalPath = out_path + "outFile.metadata";
-		this->out_file = fopen(totalPath.c_str(), "w");
-	}
+          // Create the file pointer with the given path
+          string totalPath = out_path + "outFile.metadata";
+          this->out_file = fopen(totalPath.c_str(), "w");
+        }
 
-	// If the output source is mqtt (source 2)
-	if (this->output_source == 2) {
-	       if (bus.compare("null") == 0)
-			throw runtime_error("To publish output to mqtt, please provide a valid message bus using option --bus");
-		
-       		// TODO: Initialize mqtt	       
-	}
+        // If the output source is mqtt (source 2)
+        if (this->output_source == 2) {
+               if (bus.compare("null") == 0)
+                  throw runtime_error("To publish output to mqtt, please provide a valid message bus using option --bus");
+
+                // TODO: Initialize mqtt	       
+        }
 
         // The modules that are being used for tracking
         this->face_model = LandmarkDetector::CLNF();
@@ -136,24 +136,24 @@ namespace tomcat {
             this->sequence_reader.cx,
             this->sequence_reader.cy,
             this->sequence_reader.fps);
-
+            
         int counter = 0;
 	
-	    while (1) {
-	        // Based on the input source, use the appropriate GetNextFrame() function
-	        if (this->input_source == 1)
-	            this->rgb_image = this->inotify_reader.GetNextFrame();
-	        else
-	            this->rgb_image = this->sequence_reader.GetNextFrame();
+	      while (1) {
+            // Based on the input source, use the appropriate GetNextFrame() function
+            if (this->input_source == 1)
+                this->rgb_image = this->inotify_reader.GetNextFrame();
+            else
+                this->rgb_image = this->sequence_reader.GetNextFrame();
 
-	        if(this->rgb_image.empty())
-	            break;
+            if(this->rgb_image.empty())
+                break;
 
             counter += 1;
             if (counter % 100 == 0)
                 cout << "Read " << counter << " files..." << endl;
 
-	        // Converting to grayscale
+            // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
 
             // The actual facial landmark detection / tracking
@@ -383,25 +383,25 @@ namespace tomcat {
 		
 	    // Output to specified stream
 	    switch (this->output_source) {
-		case 0:	// In this case, we need to print to stdout
-			if (this->indent)
-				cout << output.dump(4) << endl;
-			else
-				cout << output.dump() << endl;
-			break;
+          case 0:	// In this case, we need to print to stdout
+            if (this->indent)
+              cout << output.dump(4) << endl;
+            else
+              cout << output.dump() << endl;
+            break;
 
-		case 1: // In this case, print to a file
-			if (this->indent)
-				fprintf(out_file, "%s\n", output.dump(4).c_str());
-			else
-				fprintf(out_file, "%s\n", output.dump().c_str());
-			fflush(out_file);
-			break;
+          case 1: // In this case, print to a file
+            if (this->indent)
+              fprintf(out_file, "%s\n", output.dump(4).c_str());
+            else
+              fprintf(out_file, "%s\n", output.dump().c_str());
+            fflush(out_file);
+            break;
 
-		case 2: // TODO: Code for mqtt goes here
-			cout << "MQTT Code pending" << endl;
-			break;
-	    }
+          case 2: // TODO: Code for mqtt goes here
+            cout << "MQTT Code pending" << endl;
+            break;
+	        }
             // Only indent if the user specifies through command line option
             // --indent
             //if (this->indent)
@@ -415,9 +415,9 @@ namespace tomcat {
 	
         this->sequence_reader.Close();
 	
-	// Close any file that was opened
-	if (this->output_source == 1)
-		fclose(this->out_file);
+        // Close any file that was opened
+        if (this->output_source == 1)
+		      fclose(this->out_file);
 
         // Reset the models for the next video
         face_analyser.Reset();

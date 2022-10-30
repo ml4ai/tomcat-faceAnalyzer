@@ -16,6 +16,7 @@ int main(int ac, char* av[]) {
     string exp_id, trial_id, playername, of_dir, path, out_path, bus;
     bool indent, visualize, emotion;
     int input_source, output_source;
+
     // Boost command line options
     try {
 
@@ -100,9 +101,10 @@ int main(int ac, char* av[]) {
         path, 
         emotion, 
         input_source,
-	output_source,
-	out_path,
-	bus);
+	      output_source,
+	      out_path,
+	      bus);
+
     sensor.get_observation();
 
     return 0;
