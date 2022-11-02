@@ -13,9 +13,10 @@ using namespace tomcat;
 namespace po = boost::program_options;
 
 int main(int ac, char* av[]) {
-    string exp_id, trial_id, playername, of_dir, path;
+    string exp_id, trial_id, playername, of_dir, path, out_path, bus;
     bool indent, visualize, emotion;
-    int input_source;
+    int input_source, output_source;
+
     // Boost command line options
     try {
 
@@ -34,6 +35,9 @@ int main(int ac, char* av[]) {
 	    "input_source",
 	    po::value<int>(&input_source)->default_value(0),
 	    "0 for webcam, 1 for nfs")(
+	    "output_source",
+	    po::value<int>(&output_source)->default_value(0),
+	    "0 for stdout, 1 for file (need to specify out_path), 2 for mqtt (need to specify message bus)")(
             "indent",
             po::bool_switch(&indent)->default_value(false),
             "Indent output JSON by four spaces")(
@@ -45,7 +49,13 @@ int main(int ac, char* av[]) {
             "Specify an input video/image file")(
             "emotion",
             po::bool_switch(&emotion)->default_value(false),
-            "Display discrete emotion");
+            "Display discrete emotion")(
+	    "out_path",
+	    po::value<string>(&out_path)->default_value("null"),
+	    "Path for the output file if output_source is file")(
+	    "bus",
+	    po::value<string>(&bus)->default_value("null"),
+	    "Message bus to publish to if output_source is mqtt");
 
         po::variables_map vm;
         po::store(po::parse_command_line(ac, av, desc), vm);
@@ -90,7 +100,11 @@ int main(int ac, char* av[]) {
         visualize, 
         path, 
         emotion, 
-        input_source);
+        input_source,
+	      output_source,
+	      out_path,
+	      bus);
+
     sensor.get_observation();
 
     return 0;

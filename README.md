@@ -4,6 +4,7 @@
 - [Shreeya
   Jain](https://www.linkedin.com/in/shreeya-jain-0b4438122/)
 - [Adarsh Pyarelal](http://adarsh.cc)
+- [Vatsav Sethupathi](https://www.linkedin.com/in/vatsav14/)
 
 ## Description
 
@@ -51,10 +52,15 @@ following command line arguments:
   --trial_id arg            Set trial ID
   --playername arg          Set player name
   --mloc arg                Set OpenFace models directory
-  --indent                  Indent output JSON by four spaces (default false)
-  --visualize               Enable visualization (default false)
-  -f [ --file ] arg (=null) Specify an input video/image file
+  --input_source arg (=0)   0 for webcam, 1 for nfs
+  --output_source arg (=0)  0 for stdout, 1 for file (need to specify 
+                            out_path), 2 for mqtt (need to specify message bus)
+  --indent                  Indent output JSON by four spaces
+  --visualize               Enable visualization
+  -p [ --path ] arg (=null) Specify an input video/image file
   --emotion                 Display discrete emotion
+  --out_path arg (=null)    Path for the output file if output_source is file
+  --bus arg (=null)         Message bus to publish to if output_source is mqtt
 ```
 
 **NOTE:** When the `--visualize` flag is set to true, the executable also

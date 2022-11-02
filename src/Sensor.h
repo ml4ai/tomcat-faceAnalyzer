@@ -22,7 +22,11 @@ namespace tomcat {
                         bool vis,
                         std::string file_path,
                         bool output_emotions,
-                        int input_source);
+                        int input_source,
+                        int output_source,
+                        std::string out_path,
+                        std::string bus);
+
         void get_observation();
 
       private:
@@ -43,6 +47,8 @@ namespace tomcat {
         bool output_emotions;
         std::unordered_set<std::string> get_emotions(nlohmann::json au);
         int input_source;
+        int output_source;
+        FILE* out_file;
     };
 
 } // namespace tomcat

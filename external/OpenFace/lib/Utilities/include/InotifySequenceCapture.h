@@ -18,6 +18,7 @@ namespace Utilities {
             int fd, watch_desc;
         
         public:
+
             // Default constructor
             InotifySequenceCapture() = default;
                
