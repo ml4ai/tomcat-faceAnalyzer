@@ -79,3 +79,6 @@ netrc
 
 # .env files that can hold local configurations
 .env
+
+# ignore vscode file
+/.vscode/

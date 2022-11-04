@@ -13,6 +13,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <string>
+#include <sstream>
 #include <chrono>
 
 #define MAX_EVENT_MONITOR 2048
@@ -273,9 +274,20 @@ namespace tomcat {
             // JSON output
             json output;
 	    
-	        // This is the timestamp in MICROSECONDS since the Epoch
-	        uint64_t timestamp = duration_cast<microseconds>
-		        (system_clock::now().time_since_epoch()).count();
+	        // This is the timestamp in NANOSECONDS UTC
+	        auto time_now = std::chrono::high_resolution_clock::now();
+            long nanoseconds = time_now.time_since_epoch().count() % 1000000000;
+
+            // Format timestamp into string
+            std::time_t time_now_c = std::chrono::high_resolution_clock::to_time_t(time_now);
+            std::tm *time_now_tm = std::gmtime(&time_now_c);
+
+            char timestampBuffer[300];
+            strftime(timestampBuffer, sizeof(timestampBuffer), "%FT%T", time_now_tm);
+
+            std::stringstream timestampStream;
+            timestampStream << timestampBuffer << '.' << nanoseconds << 'Z';
+            std::string timestamp = timestampStream.str();
 
             // Header block
             output["header"] = {
