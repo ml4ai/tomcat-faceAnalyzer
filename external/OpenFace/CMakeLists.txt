@@ -1,62 +1,41 @@
-cmake_minimum_required(VERSION 3.2)
-project(OpenFace VERSION 2.0.2)
+SET(SOURCE
+    src/ImageCapture.cpp
+	src/RecorderCSV.cpp
+    src/RecorderHOG.cpp
+	src/RecorderOpenFace.cpp
+    src/RecorderOpenFaceParameters.cpp
+	src/SequenceCapture.cpp
+	src/VisualizationUtils.cpp
+	src/Visualizer.cpp
+	src/DirectorySequenceCapture.cpp
+)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-                      "${PROJECT_SOURCE_DIR}/cmake/modules/")
+SET(HEADERS
+    include/ImageCapture.h	
+    include/RecorderCSV.h
+	include/RecorderHOG.h
+    include/RecorderOpenFace.h
+	include/RecorderOpenFaceParameters.h
+	include/SequenceCapture.h
+	include/VisualizationUtils.h
+	include/Visualizer.h
+	include/DirectorySequenceCapture.h
+)
 
-# Make sure we'll use OpenBLAS only: there's a header file naming difference
-# between different implementations; so OpenFace wants OpenBLAS;
-find_package(OpenBLAS REQUIRED)
-if(NOT ${OpenBLAS_FOUND})
-  message(FATAL_ERROR "OpenBLAS not found in the system.")
-endif()
+add_library( Utilities ${SOURCE} ${HEADERS})
+add_library( OpenFace::Utilities ALIAS Utilities)
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-  execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-                  OUTPUT_VARIABLE GCC_VERSION)
-  if(GCC_VERSION VERSION_LESS 4.7)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -msse -msse2 -msse3")
-  else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -msse -msse2 -msse3")
-  endif()
-else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -msse -msse2 -msse3")
-endif()
+target_include_directories(Utilities PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include/OpenFace>)
 
-# suppress auto_ptr deprecation warnings
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}"
-                                                  STREQUAL "GNU")
-  add_compile_options("-Wno-deprecated-declarations")
-endif()
+target_include_directories(Utilities PRIVATE ${UTILITIES_SOURCE_DIR}/include)
+target_include_directories(Utilities PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories(Utilities PUBLIC ${Boost_INCLUDE_DIRS}/boost)
+target_include_directories(Utilities PUBLIC ${OpenCV_INCLUDE_DIRS})
 
-file(GLOB openface_sources CONFIGURE_DEPENDS
-     ${CMAKE_CURRENT_SOURCE_DIR}/lib/*/src/*.cpp)
-file(GLOB openface_headers CONFIGURE_DEPENDS
-     ${CMAKE_CURRENT_SOURCE_DIR}/lib/*/include/*.h)
-file(GLOB openface_include_dirs CONFIGURE_DEPENDS
-     ${CMAKE_CURRENT_SOURCE_DIR}/lib/*/include)
+target_link_libraries(Utilities PUBLIC ${OpenCV_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(Utilities PRIVATE dlib::dlib)
 
-find_package(dlib REQUIRED)
-find_package(OpenCV REQUIRED)
-message(STATUS "OpenCV Libs: ${OpenCV_LIBS}")
-add_library(OpenFace STATIC ${openface_sources} ${openface_headers})
-target_link_libraries(
-  OpenFace
-  PRIVATE opencv_core
-          opencv_highgui
-          opencv_imgproc
-          opencv_videoio
-          opencv_objdetect
-          ${Boost_LIBRARIES}
-          dlib::dlib
-          ${OpenBLAS_LIB})
-
-target_include_directories(
-  OpenFace PUBLIC ${openface_include_dirs} ${OpenBLAS_INCLUDE_DIR}
-                  ${OpenCV_INCLUDE_DIRS})
-
-install(FILES ${openface_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/OpenFace)
-
-install(TARGETS OpenFace DESTINATION lib)
+install (TARGETS Utilities EXPORT OpenFaceTargets LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+install (FILES ${HEADERS} DESTINATION include/OpenFace)
