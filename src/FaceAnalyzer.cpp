@@ -34,7 +34,7 @@ int main(int ac, char* av[]) {
                                                "Set OpenFace models directory")(
 	    "input_source",
 	    po::value<int>(&input_source)->default_value(0),
-	    "0 for webcam, 1 for nfs")(
+	    "0 for webcam, 1 for nfs, 2 for directory")(
 	    "output_source",
 	    po::value<int>(&output_source)->default_value(0),
 	    "0 for stdout, 1 for file (need to specify out_path), 2 for mqtt (need to specify message bus)")(
@@ -91,8 +91,7 @@ int main(int ac, char* av[]) {
         cerr << "Exception of unknown type!" << endl;
     }
 
-    Sensor sensor;
-    sensor.initialize(
+    Sensor sensor{
         exp_id, 
         trial_id, 
         playername, 
@@ -101,9 +100,9 @@ int main(int ac, char* av[]) {
         path, 
         emotion, 
         input_source,
-	      output_source,
-	      out_path,
-	      bus);
+	    output_source,
+	    out_path,
+	    bus};
 
     sensor.get_observation();
 

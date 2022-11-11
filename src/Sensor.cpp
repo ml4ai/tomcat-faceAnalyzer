@@ -13,7 +13,10 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <string>
+#include <sstream>
 #include <chrono>
+#include <sstream>
+#include <sys/stat.h>
 
 #define MAX_EVENT_MONITOR 2048
 #define NAME_LEN 32
@@ -29,17 +32,20 @@ typedef vector<pair<string, double>> au_vector;
 
 namespace tomcat {
 
-    void Sensor::initialize(string exp,
-                            string trial,
-                            string pname,
-                            bool ind,
-                            bool vis,
-                            string path,
-                            bool output_emotions,
-                            int input_source,
-                            int output_source,
-                            string out_path,
-                            string bus) {
+    Sensor::Sensor(string exp,
+                   string trial,
+                   string pname,
+                   bool ind,
+                   bool vis,
+                   string path,
+                   bool output_emotions,
+                   int input_source,
+                   int output_source,
+                   string out_path,
+                   string bus)
+            : visualizer(true, false, false, false),
+              det_parameters(this->arguments),
+              directory_reader(path) {
         // Initialize the experiment ID, trial ID and player name
         this->exp_id = exp;
         this->trial_id = trial;
@@ -48,7 +54,7 @@ namespace tomcat {
         this->visual = vis;
         this->output_emotions = output_emotions;
         this->input_source = input_source;
-	      this->output_source = output_source;
+	    this->output_source = output_source;
 
         // If the input source is the webcam (source 0)
         if (this->input_source == 0) {
@@ -84,7 +90,7 @@ namespace tomcat {
             throw runtime_error("To print output to a file, please provide a valid path using option --out_path");
 
           // Create the file pointer with the given path
-          string totalPath = out_path + "outFile.metadata";
+          string totalPath = out_path + "face_analyzer.metadata";
           this->out_file = fopen(totalPath.c_str(), "w");
         }
 
@@ -136,22 +142,34 @@ namespace tomcat {
             this->sequence_reader.cx,
             this->sequence_reader.cy,
             this->sequence_reader.fps);
-            
-        int counter = 0;
-	
-	      while (1) {
-            // Based on the input source, use the appropriate GetNextFrame() function
-            if (this->input_source == 1)
-                this->rgb_image = this->inotify_reader.GetNextFrame();
-            else
-                this->rgb_image = this->sequence_reader.GetNextFrame();
 
-            if(this->rgb_image.empty())
+        int counter = 0;
+
+        auto start = high_resolution_clock::now();
+	    while (1) {
+            // Based on the input source, use the appropriate GetNextFrame() function
+            if (this->input_source == 0)
+                this->rgb_image = this->sequence_reader.GetNextFrame();
+            else if (this->input_source == 1)
+                this->rgb_image = this->inotify_reader.GetNextFrame();
+            else if (this->input_source == 2)
+                this->rgb_image = this->directory_reader.GetNextFrame();
+            else
+                throw runtime_error("Invalid input source");
+
+            if(this->rgb_image.empty()) {
+                if (this->input_source == 2) {
+                    auto duration = duration_cast<seconds>(std::chrono::high_resolution_clock::now() - start);
+                    std::cout << "Reading ends after " << duration.count() << " seconds " << this->directory_reader.getCurrentFileName() << std::endl;
+                }
                 break;
+            }
 
             counter += 1;
-            if (counter % 100 == 0)
-                cout << "Read " << counter << " files..." << endl;
+            if (counter % 100 == 0) {
+                auto duration = duration_cast<seconds>(std::chrono::high_resolution_clock::now() - start);
+                cout << duration.count() << "seconds, read " << counter << " files..." << endl;
+            }
 
             // Converting to grayscale
             this->grayscale_image = this->sequence_reader.GetGrayFrame();
@@ -272,10 +290,38 @@ namespace tomcat {
 
             // JSON output
             json output;
-	    
-	        // This is the timestamp in MICROSECONDS since the Epoch
-	        uint64_t timestamp = duration_cast<microseconds>
-		        (system_clock::now().time_since_epoch()).count();
+
+            std::string timestamp;
+
+            if (this->input_source == 0 || this->input_source == 1) {
+                // This is the timestamp in NANOSECONDS UTC
+                auto time_now = std::chrono::high_resolution_clock::now();
+                long nanoseconds = time_now.time_since_epoch().count() % 1000000000;
+
+                // Format timestamp into string
+                std::time_t time_now_c = std::chrono::high_resolution_clock::to_time_t(time_now);
+                std::tm *time_now_tm = std::gmtime(&time_now_c);
+
+                char timestampBuffer[300];
+                strftime(timestampBuffer, sizeof(timestampBuffer), "%FT%T", time_now_tm);
+
+                std::stringstream timestampStream;
+                timestampStream << timestampBuffer << '.' << std::setfill('0') << std::setw(9) << nanoseconds << 'Z';
+                timestamp = timestampStream.str();
+            } else {
+                struct stat t_stat;
+                stat(this->directory_reader.getCurrentFileName().c_str(), &t_stat);
+				struct tm *time_now_tm = gmtime(&t_stat.st_ctime);
+
+                char timestampBuffer[300];
+                strftime(timestampBuffer, sizeof(timestampBuffer), "%FT%T", time_now_tm);
+
+                std::stringstream timestampStream;
+                timestampStream << timestampBuffer << '.' << std::setfill('0') << std::setw(9) << t_stat.st_ctim.tv_nsec << 'Z';
+                timestamp = timestampStream.str();
+
+                std::cout << timestamp << ' ' << this->directory_reader.getCurrentFileName() << std::endl;
+            }
 
             // Header block
             output["header"] = {

@@ -2,6 +2,7 @@
 
 #include <SequenceCapture.h>
 #include <InotifySequenceCapture.h>
+#include <DirectorySequenceCapture.h>
 #include <VisualizationUtils.h>
 #include <Visualizer.h>
 #include <nlohmann/json.hpp>
@@ -11,21 +12,17 @@ namespace tomcat {
 
     class Sensor {
       public:
-        Sensor()
-            : visualizer(true, false, false, false),
-              det_parameters(this->arguments) {}
-
-        void initialize(std::string exp,
-                        std::string trial,
-                        std::string pname,
-                        bool ind,
-                        bool vis,
-                        std::string file_path,
-                        bool output_emotions,
-                        int input_source,
-                        int output_source,
-                        std::string out_path,
-                        std::string bus);
+        Sensor(std::string exp,
+               std::string trial,
+               std::string pname,
+               bool ind,
+               bool vis,
+               std::string file_path,
+               bool output_emotions,
+               int input_source,
+               int output_source,
+               std::string out_path,
+               std::string bus);
 
         void get_observation();
 
@@ -35,6 +32,7 @@ namespace tomcat {
         cv::Mat rgb_image;
         Utilities::SequenceCapture sequence_reader;
         Utilities::InotifySequenceCapture inotify_reader;
+        Utilities::DirectorySequenceCapture directory_reader;
         LandmarkDetector::CLNF face_model;
         LandmarkDetector::FaceModelParameters det_parameters;
         Utilities::FpsTracker fps_tracker;
