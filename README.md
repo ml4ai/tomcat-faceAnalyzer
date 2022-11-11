@@ -5,6 +5,7 @@
   Jain](https://www.linkedin.com/in/shreeya-jain-0b4438122/)
 - [Adarsh Pyarelal](http://adarsh.cc)
 - [Vatsav Sethupathi](https://www.linkedin.com/in/vatsav14/)
+- Eric Duong
 
 ## Description
 
