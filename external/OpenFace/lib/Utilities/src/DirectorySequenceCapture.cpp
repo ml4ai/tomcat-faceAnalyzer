@@ -46,13 +46,13 @@ std::string DirectorySequenceCapture::getFileTimestampFromName() {
 std::string DirectorySequenceCapture::getFileModifiedTimestamp() {
     struct stat t_stat;
     stat(this->getCurrentFilePath().c_str(), &t_stat);
-    struct tm *time_now_tm = gmtime(&t_stat.st_ctime);
+    struct tm *time_now_tm = gmtime(&t_stat.st_mtime);
 
     char timestampBuffer[300];
     strftime(timestampBuffer, sizeof(timestampBuffer), "%FT%T", time_now_tm);
 
     std::stringstream timestampStream;
-    timestampStream << timestampBuffer << '.' << std::setfill('0') << std::setw(9) << t_stat.st_ctim.tv_nsec << 'Z';
+    timestampStream << timestampBuffer << '.' << std::setfill('0') << std::setw(9) << t_stat.st_mtim.tv_nsec << 'Z';
     timestamp = timestampStream.str();
 
     return timestamp;
