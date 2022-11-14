@@ -21,6 +21,7 @@ namespace Utilities {
             directory_iterator directory_itr;
             directory_iterator end_itr;
             std::string current_filename;
+            std::string current_filepath;
 
         public:
             // Default constructor
@@ -31,6 +32,10 @@ namespace Utilities {
             cv::Mat GetNextFrame();
 
             std::string getCurrentFileName();
+            std::string getCurrentFilePath();
+
+            std::string getFileModifiedTimestamp();
+            std::string getFileTimestampFromName();
 
             path getMonitoringPath();
     };

@@ -15,8 +15,6 @@
 #include <string>
 #include <sstream>
 #include <chrono>
-#include <sstream>
-#include <sys/stat.h>
 
 #define MAX_EVENT_MONITOR 2048
 #define NAME_LEN 32
@@ -309,17 +307,7 @@ namespace tomcat {
                 timestampStream << timestampBuffer << '.' << std::setfill('0') << std::setw(9) << nanoseconds << 'Z';
                 timestamp = timestampStream.str();
             } else {
-                struct stat t_stat;
-                stat(this->directory_reader.getCurrentFileName().c_str(), &t_stat);
-				struct tm *time_now_tm = gmtime(&t_stat.st_ctime);
-
-                char timestampBuffer[300];
-                strftime(timestampBuffer, sizeof(timestampBuffer), "%FT%T", time_now_tm);
-
-                std::stringstream timestampStream;
-                timestampStream << timestampBuffer << '.' << std::setfill('0') << std::setw(9) << t_stat.st_ctim.tv_nsec << 'Z';
-                timestamp = timestampStream.str();
-
+                std::string timestamp = this->directory_reader.getFileTimestampFromName();
                 std::cout << timestamp << ' ' << this->directory_reader.getCurrentFileName() << std::endl;
             }
 
