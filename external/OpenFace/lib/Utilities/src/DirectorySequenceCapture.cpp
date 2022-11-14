@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
+#include <iomanip>
 
 using namespace Utilities;
 
@@ -12,7 +13,7 @@ DirectorySequenceCapture::DirectorySequenceCapture(const std::string &path):
 cv::Mat DirectorySequenceCapture::GetNextFrame() {
     while (this->directory_itr != this->end_itr) {
         this->current_filepath = this->directory_itr->path().string();
-        this->current_filename = this->directory_itr->path().stem();
+        this->current_filename = this->directory_itr->path().stem().string();
         this->directory_itr++;
 
         if (this->current_filepath.find("png") != std::string::npos &&
