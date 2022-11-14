@@ -1,6 +1,7 @@
 #include "DirectorySequenceCapture.h"
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <sys/stat.h>
 
 using namespace Utilities;
@@ -53,9 +54,8 @@ std::string DirectorySequenceCapture::getFileModifiedTimestamp() {
 
     std::stringstream timestampStream;
     timestampStream << timestampBuffer << '.' << std::setfill('0') << std::setw(9) << t_stat.st_mtim.tv_nsec << 'Z';
-    timestamp = timestampStream.str();
 
-    return timestamp;
+    return timestampStream.str();
 }
 
 path DirectorySequenceCapture::getMonitoringPath() {
