@@ -23,7 +23,7 @@ cv::Mat DirectorySequenceCapture::GetNextFrame() {
                 return readImage;
         }
 
-        std::cout << "Skipped " << this->current_filename << std::endl;
+        std::cout << "Skipped " << this->current_filepath << std::endl;
     }
 
     this->current_filename = "";

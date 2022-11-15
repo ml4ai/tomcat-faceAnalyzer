@@ -307,7 +307,7 @@ namespace tomcat {
                 timestampStream << timestampBuffer << '.' << std::setfill('0') << std::setw(9) << nanoseconds << 'Z';
                 timestamp = timestampStream.str();
             } else {
-                std::string timestamp = this->directory_reader.getFileTimestampFromName();
+                timestamp = this->directory_reader.getFileTimestampFromName();
                 std::cout << timestamp << ' ' << this->directory_reader.getCurrentFileName() << std::endl;
             }
 
