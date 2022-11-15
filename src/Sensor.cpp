@@ -308,7 +308,7 @@ namespace tomcat {
                 timestamp = timestampStream.str();
             } else {
                 timestamp = this->directory_reader.getFileTimestampFromName();
-                std::cout << timestamp << ' ' << this->directory_reader.getCurrentFileName() << std::endl;
+                std::cout << timestamp << ' ' << this->directory_reader.getCurrentFilePath() << std::endl;
             }
 
             // Header block
